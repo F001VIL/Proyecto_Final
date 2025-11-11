@@ -1,4 +1,7 @@
 package modelo;
 
-public class Resource {
+interface Resource {
+
+//    generate code
+    public String generateCode();
 }

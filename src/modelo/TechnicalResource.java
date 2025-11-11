@@ -1,4 +1,5 @@
 package modelo;
 
-public class TechnicalResource {
+public abstract class TechnicalResource implements Resource {
+
 }
