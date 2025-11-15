@@ -42,7 +42,7 @@ public class UsuarioDAO {
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error al validar usuario: " + e.getMessage());
+            System.err.println(" Error al validar usuario: " + e.getMessage());
         }
         return null;
     }
