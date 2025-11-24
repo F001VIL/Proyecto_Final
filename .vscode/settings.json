@@ -1,0 +1,8 @@
+{
+    "java.project.sourcePaths": [
+        "src"
+    ],
+    "java.project.referencedLibraries": [
+        "d:\\UTP_Sistemas\\Cuarto Ciclo\\Programacion Orientada a Objetos\\Proyecto2\\Proyecto_Final\\lib\\mssql-jdbc-13.2.1.jre11.jar"
+    ]
+}

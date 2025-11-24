@@ -158,4 +158,40 @@ public class UsuarioDAO {
             return false;
         }
     }
+
+
+    public Usuario obtenerPorId(int usuarioId) {
+    String sql = "SELECT * FROM Usuario WHERE UsuarioID = ?";
+
+    try (Connection con = ConexionBD.getConnection();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setInt(1, usuarioId);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            String salt = rs.getString("Salt");
+            String hash = rs.getString("PasswordHash");
+
+            // Usamos el mismo constructor que en validarLogin
+            Usuario u = new Usuario(
+                    rs.getInt("UsuarioID"),
+                    rs.getInt("PersonaID"),
+                    rs.getString("Username"),
+                    hash,
+                    salt,
+                    rs.getString("Rol"),
+                    rs.getBoolean("Activo")
+            );
+            u.setPrimerInicio(rs.getBoolean("PrimerInicio"));
+
+            return u;
+        }
+
+    } catch (SQLException e) {
+        System.out.println("Error obteniendo usuario por ID: " + e.getMessage());
+    }
+
+    return null;
+    }
 }

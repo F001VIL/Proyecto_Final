@@ -99,4 +99,37 @@ public class SolicitudDAO {
             return false;
         }
     }
+
+
+    public Solicitud obtenerPorId(int solicitudId) {
+        String sql = """
+                SELECT SolicitudID, UsuarioID, TipoMaterial, MaterialID, Estado, FechaSolicitud
+                FROM Solicitud
+                WHERE SolicitudID = ?
+                """;
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, solicitudId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Solicitud(
+                            rs.getInt("SolicitudID"),
+                            rs.getInt("UsuarioID"),
+                            rs.getString("TipoMaterial"),
+                            rs.getInt("MaterialID"),
+                            rs.getString("Estado"),
+                            rs.getTimestamp("FechaSolicitud")
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error obteniendo solicitud por ID: " + e.getMessage());
+        }
+
+        return null;
+    }
 }
