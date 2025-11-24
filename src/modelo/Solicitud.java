@@ -22,6 +22,34 @@ public class Solicitud {
         this.fechaSolicitud = fechaSolicitud;
     }
 
+    public int getId() {
+        return id;
+    }
+
+    public int getUsuarioId() {
+        return usuarioId;
+    }
+
+    public String getTipoMaterial() {
+        return tipoMaterial;
+    }
+
+    public int getMaterialId() {
+        return materialId;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public Date getFechaSolicitud() {
+        return fechaSolicitud;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
     @Override
     public String toString() {
         return "Solicitud{" +

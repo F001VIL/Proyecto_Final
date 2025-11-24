@@ -6,7 +6,7 @@ import java.sql.SQLException;
 
 public class ConexionBD {
     private static final String URL = 
-        "jdbc:sqlserver://localhost:1434;databaseName=BIBLIOTECA_UNIVERSITARIA;encrypt=false";
+        "jdbc:sqlserver://RYU:1433;databaseName=BIBLIOTECA_UNIVERSITARIA;encrypt=false;trustServerCertificate=true;";
     private static final String USER = "admin";  
     private static final String PASSWORD = "Admin2025*"; 
 
