@@ -446,9 +446,6 @@ public class Main {
     //  FUNCIONES AUXILIARES (PRÉSTAMOS, SALAS, SOLICITUDES)
     // ==========================================================
 
-    // ======================================================
-    // === *** AQUI VIENE TU MÉTODO MODIFICADO *** ==========
-    // ======================================================
 
     private static void solicitarPrestamo(Scanner sc, SolicitudDAO solDAO, RecursoDAO recursoDAO, Usuario u) {
 
@@ -490,9 +487,6 @@ public class Main {
         System.out.print("ID de copia a solicitar: ");
         int copiaID = Integer.parseInt(sc.nextLine());
 
-        // ======================================================
-        // === NUEVO: PEDIR FECHAS Y VALIDAR ====================
-        // ======================================================
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -529,9 +523,6 @@ public class Main {
         }
     }
 
-    // ======================================================
-    // === TU CÓDIGO SIGUE NORMAL SIN CAMBIOS
-    // ======================================================
 
     private static void reservarSala(Scanner sc, ReservaSalaDAO salaDAO, Usuario u) {
         try {
