@@ -27,6 +27,37 @@ public class SolicitudDAO {
         }
     }
 
+    /* ***************************************************
+       NUEVO MÉTODO AGREGADO (NO SE MODIFICÓ NADA MÁS)
+       *************************************************** */
+    public boolean crearSolicitudConFechas(int usuarioId, String tipoMaterial, int materialId,
+                                           Timestamp fechaPrestamo, Timestamp fechaDevolucion) {
+
+        String sql = """
+                INSERT INTO Solicitud 
+                (UsuarioID, TipoMaterial, MaterialID, Fecha_prestamo, Fecha_devolucion, Estado)
+                VALUES (?, ?, ?, ?, ?, 'Pendiente')
+                """;
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, usuarioId);
+            ps.setString(2, tipoMaterial);
+            ps.setInt(3, materialId);
+            ps.setTimestamp(4, fechaPrestamo);
+            ps.setTimestamp(5, fechaDevolucion);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error creando solicitud con fechas: " + e.getMessage());
+            return false;
+        }
+    }
+    /* *************************************************** */
+
+
     public List<Solicitud> verSolicitudesUsuario(int usuarioId) {
         List<Solicitud> lista = new ArrayList<>();
 
