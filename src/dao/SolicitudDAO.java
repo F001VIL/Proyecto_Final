@@ -27,9 +27,6 @@ public class SolicitudDAO {
         }
     }
 
-    /* ***************************************************
-       NUEVO MÉTODO AGREGADO (NO SE MODIFICÓ NADA MÁS)
-       *************************************************** */
     public boolean crearSolicitudConFechas(int usuarioId, String tipoMaterial, int materialId,
                                            Timestamp fechaPrestamo, Timestamp fechaDevolucion) {
 
@@ -55,7 +52,6 @@ public class SolicitudDAO {
             return false;
         }
     }
-    /* *************************************************** */
 
 
     public List<Solicitud> verSolicitudesUsuario(int usuarioId) {
