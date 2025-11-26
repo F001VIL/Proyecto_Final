@@ -86,7 +86,7 @@ public class UsuarioDAO {
             return true;
 
         } catch (SQLException e) {
-            System.err.println("❌ Error al crear usuario/persona: " + e.getMessage());
+            System.err.println("Error al crear usuario/persona: " + e.getMessage());
             return false;
         }
     }
