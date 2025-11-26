@@ -11,6 +11,9 @@ import modelo.Recurso;
 import modelo.Solicitud;
 import modelo.Thesis;
 import modelo.ReservaSala;
+import modelo.Sala;
+import dao.ReservaSalaDAO;
+import dao.SalaDAO;
 
 import java.util.List;
 import java.util.Scanner;
@@ -188,15 +191,16 @@ public class Main {
 
             switch (op) {
                 case 1 -> solicitarPrestamo(sc, solDAO, recursoDAO, u);
-                case 2 -> reservarSala(sc, salaDAO, u);
+                case 2 -> {
+                    listarSalas(new SalaDAO());
+                    reservarSala(sc, salaDAO, u);
+                    }
                 case 3 -> verSolicitudesUsuario(solDAO, u);
                 case 4 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
     }
-
-    
 
     // ==========================================================
     //                       MENU PROFESOR
@@ -219,7 +223,10 @@ public class Main {
 
             switch (op) {
                 case 1 -> solicitarPrestamo(sc, solDAO, recursoDAO, u);
-                case 2 -> reservarSala(sc, salaDAO, u);
+                case 2 -> {
+                    listarSalas(new SalaDAO());
+                    reservarSala(sc, salaDAO, u);
+                    }
                 case 3 -> verSolicitudesUsuario(solDAO, u);
                 case 4 -> { return; }
                 default -> System.out.println(" Opción no válida.");
@@ -243,7 +250,9 @@ public class Main {
             System.out.println("3. Ver solicitudes de préstamo");
             System.out.println("4. Ver reservas de sala");
             System.out.println("5. Procesar solicitudes (aprobar / rechazar)");
-            System.out.println("6. Salir");
+            System.out.println("6. Registrar sala");
+            System.out.println("7. Ver salas");
+            System.out.println("8. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -254,7 +263,9 @@ public class Main {
                 case 3 -> solDAO.verSolicitudesPendientes().forEach(System.out::println);
                 case 4 -> salaDAO.listarReservas().forEach(System.out::println);
                 case 5 -> procesarSolicitudes(sc, solDAO);
-                case 6 -> { return; }
+                case 6 -> registrarSala(sc, new SalaDAO());
+                case 7 -> listarSalas(new SalaDAO());
+                case 8 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -290,7 +301,6 @@ public class Main {
         System.out.print("Año de publicación: ");
         int anio = Integer.parseInt(sc.nextLine());
 
-        // Para simplificar, usamos solo año:
         java.time.LocalDate fechaPub = java.time.LocalDate.of(anio, 1, 1);
 
         Material material;
@@ -334,7 +344,7 @@ public class Main {
                 System.out.print("Idioma: ");
                 String language = sc.nextLine();
 
-                material = new Ebook(0, titulo, autor, fechaPub, formato, fileSize, paginas, isbn, language); // o Audiobook
+                material = new Ebook(0, titulo, autor, fechaPub, formato, fileSize, paginas, isbn, language);
             }
             case 4 -> {
                 System.out.print("Formato del archivo (mp4, mkv, etc.): ");
@@ -362,7 +372,6 @@ public class Main {
                 System.out.print("Idioma: ");
                 String language = sc.nextLine();
 
-                
                 material = new Journal(0, titulo, autor, fechaPub, formato, sede, stock, volume, issn, language );
             }
             default -> {
@@ -391,11 +400,11 @@ public class Main {
         
         String descripcion = "Registrado por bibliotecario";
         int tipoRecursoId = switch (tipo) {
-            case 1 -> 1;  // Libro
-            case 2 -> 2;  // Tesis
-            case 3 -> 3;  // Audiolibro
-            case 4 -> 4;  // Multimedia
-            case 5 -> 7;  // Revista
+            case 1 -> 1;
+            case 2 -> 2;
+            case 3 -> 3;
+            case 4 -> 4;
+            case 5 -> 7;
             default -> 0;
         };
 
@@ -405,7 +414,6 @@ public class Main {
             return;
         }
 
-        // Físicos -> crear una copia; Digitales -> tabla AccesoDigital
         if (tipo == 1 || tipo == 5) {
             System.out.print("Código de copia (ej. LIB-0001): ");
             String codigo = sc.nextLine();
@@ -438,6 +446,7 @@ public class Main {
     //  FUNCIONES AUXILIARES (PRÉSTAMOS, SALAS, SOLICITUDES)
     // ==========================================================
 
+
     private static void solicitarPrestamo(Scanner sc, SolicitudDAO solDAO, RecursoDAO recursoDAO, Usuario u) {
 
         System.out.println("\nSeleccione el tipo de material:");
@@ -453,7 +462,6 @@ public class Main {
 
         int tipo = Integer.parseInt(sc.nextLine());
 
-        // Convertimos a String si RecursoDAO requiere tipo como String
         String tipoStr = switch (tipo) {
             case 1 -> "Libro";
             case 2 -> "Tesis";
@@ -479,11 +487,42 @@ public class Main {
         System.out.print("ID de copia a solicitar: ");
         int copiaID = Integer.parseInt(sc.nextLine());
 
-        if (solDAO.crearSolicitud(u.getId(), tipoStr, copiaID))
-            System.out.println("✔ Solicitud registrada.");
-        else
-            System.out.println("Error creando solicitud.");
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+            System.out.print("Fecha de préstamo (yyyy-MM-dd): ");
+            String fPrestamoStr = sc.nextLine();
+            java.util.Date fechaPrestamo = sdf.parse(fPrestamoStr);
+
+            System.out.print("Fecha de devolución (yyyy-MM-dd): ");
+            String fDevolStr = sc.nextLine();
+            java.util.Date fechaDevolucion = sdf.parse(fDevolStr);
+
+            long dias = (fechaDevolucion.getTime() - fechaPrestamo.getTime()) / (1000L * 60 * 60 * 24);
+
+            if (dias < 0) {
+                System.out.println("❌ La fecha de devolución no puede ser anterior a la fecha de préstamo.");
+                return;
+            }
+
+            if (dias > 7) {
+                System.out.println("❌ El préstamo no puede exceder 7 días.");
+                return;
+            }
+
+            Timestamp tsPrestamo = new Timestamp(fechaPrestamo.getTime());
+            Timestamp tsDevol = new Timestamp(fechaDevolucion.getTime());
+
+            if (solDAO.crearSolicitudConFechas(u.getId(), tipoStr, copiaID, tsPrestamo, tsDevol))
+                System.out.println("✔ Solicitud registrada con fechas.");
+            else
+                System.out.println("Error creando solicitud.");
+
+        } catch (Exception e) {
+            System.out.println("Formato incorrecto. Debe usar YYYY-MM-DD.");
+        }
     }
+
 
     private static void reservarSala(Scanner sc, ReservaSalaDAO salaDAO, Usuario u) {
         try {
@@ -529,7 +568,6 @@ public class Main {
         System.out.print("Nuevo estado (Aprobado / Rechazado): ");
         String estado = sc.nextLine().trim();
 
-        // 1) Obtener la solicitud completa
         Solicitud solicitud = solDAO.obtenerPorId(id);
         if (solicitud == null) {
             System.out.println("No se encontró la solicitud con ese ID.");
@@ -538,7 +576,6 @@ public class Main {
 
         System.out.println("Solicitud seleccionada: " + solicitud);
 
-        // 2) Si es APROBADO, ver si es material físico o digital
         if (estado.equalsIgnoreCase("Aprobado")) {
             String tipo = solicitud.getTipoMaterial();
 
@@ -552,24 +589,73 @@ public class Main {
                 
                 PrestamoService prestamoService = new PrestamoService();
 
-                // aquí usamos la INSTANCIA, no la clase
                 boolean okPrestamo = prestamoService.prestarRecurso(solicitud);
 
                 if (!okPrestamo) {
                     System.out.println("No se pudo generar el préstamo. La solicitud seguirá como Pendiente.");
-                    return; // NO cambiamos el estado
+                    return;
                 }
             } else {
-                // DIGITAL: NO se crea registro en Prestamo, solo se aprueba la solicitud
                 System.out.println("Material digital: se aprueba la solicitud sin generar préstamo físico.");
             }
         }
 
-        // 3) Finalmente, actualizar el estado de la solicitud
         if (solDAO.actualizarEstadoSolicitud(id, estado)) {
             System.out.println("Estado de la solicitud actualizado a: " + estado);
         } else {
             System.out.println("Error actualizando estado.");
         }
-    }    
+    }
+    // ================= REGISTRAR SALA =================
+
+private static void registrarSala(Scanner sc, SalaDAO salaDAO) {
+
+    sc.nextLine();
+    System.out.print("Nombre de la sala: ");
+    String nombre = sc.nextLine();
+
+    System.out.print("Ubicación: ");
+    String ubicacion = sc.nextLine();
+
+    System.out.print("Capacidad: ");
+    int capacidad = sc.nextInt();
+    sc.nextLine();
+
+    System.out.print("Descripción: ");
+    String descripcion = sc.nextLine();
+
+    Sala nueva = new Sala(0, nombre, ubicacion, capacidad, descripcion);
+
+    if (salaDAO.registrarSala(nueva)) {
+        System.out.println(" Sala registrada correctamente.");
+    } else {
+        System.out.println(" Error al registrar la sala.");
+    }
+}
+
+
+
+// ================= LISTAR SALAS =================
+
+private static void listarSalas(SalaDAO salaDAO) {
+
+    List<Sala> salas = salaDAO.listarSalas();
+
+    if (salas.isEmpty()) {
+        System.out.println("No hay salas registradas.");
+        return;
+    }
+
+    System.out.println("===== LISTA DE SALAS =====");
+
+    for (Sala s : salas) {
+        System.out.println(
+                s.getSalaId() + " | " +
+                s.getNombreSala() + " | " +
+                s.getUbicacion() + " | Capacidad: " +
+                s.getCapacidad()
+        );
+    }
+}
+
 }

@@ -5,10 +5,12 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConexionBD {
-    private static final String URL = 
-        "jdbc:sqlserver://RYU:1433;databaseName=BIBLIOTECA_UNIVERSITARIA;encrypt=false;trustServerCertificate=true;";
-    private static final String USER = "admin";  
-    private static final String PASSWORD = "Admin2025*"; 
+
+    private static final String URL =
+        "jdbc:sqlserver://localhost:1435;databaseName=BIBLIOTECA_UNIVERSITARIA;encrypt=false;trustServerCertificate=true;";
+    
+    private static final String USER = "admin";
+    private static final String PASSWORD = "Admin2025*";
 
     public static Connection getConnection() {
         try {
@@ -21,9 +23,7 @@ public class ConexionBD {
         }
     }
 
-    // Método de prueba (para ejecutar desde terminal)
     public static void main(String[] args) {
         getConnection();
     }
 }
-
