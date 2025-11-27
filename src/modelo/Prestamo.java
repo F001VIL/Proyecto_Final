@@ -38,6 +38,9 @@ public class Prestamo {
     public int getPrestamoId() { return prestamoId; }
     public int getCopiaId() { return copiaId; }
     public int getPersonaId() { return personaId; }
+    public Timestamp getFechaPrestamo() { return fechaPrestamo; }
+    public Timestamp getFechaVencimiento() { return fechaVencimiento; }
+    public Timestamp getFechaDevolucion() { return fechaDevolucion; }
     public String getTitulo() { return titulo; }
 
     @Override

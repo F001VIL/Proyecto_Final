@@ -7,16 +7,17 @@ import modelo.Digital;
 import modelo.Ebook;
 import modelo.Journal;
 import modelo.Material;
+import modelo.Penalidad;
+import modelo.Prestamo;
 import modelo.Recurso;
 import modelo.Solicitud;
 import modelo.Thesis;
 import modelo.ReservaSala;
 import modelo.Sala;
-import dao.ReservaSalaDAO;
-import dao.SalaDAO;
 
 import java.util.List;
 import java.util.Scanner;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
@@ -250,9 +251,12 @@ public class Main {
             System.out.println("3. Ver solicitudes de préstamo");
             System.out.println("4. Ver reservas de sala");
             System.out.println("5. Procesar solicitudes (aprobar / rechazar)");
-            System.out.println("6. Registrar sala");
-            System.out.println("7. Ver salas");
-            System.out.println("8. Salir");
+            System.out.println("6. Registrar devolución de préstamo");
+            System.out.println("7. Registrar penalidad posterior");
+            System.out.println("8. Ver penalidades y registrar pago");
+            System.out.println("9. Registrar sala");
+            System.out.println("10. Ver salas");
+            System.out.println("11. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -263,9 +267,12 @@ public class Main {
                 case 3 -> solDAO.verSolicitudesPendientes().forEach(System.out::println);
                 case 4 -> salaDAO.listarReservas().forEach(System.out::println);
                 case 5 -> procesarSolicitudes(sc, solDAO);
-                case 6 -> registrarSala(sc, new SalaDAO());
-                case 7 -> listarSalas(new SalaDAO());
-                case 8 -> { return; }
+                case 6 -> registrarDevolucion(sc);
+                case 7 -> registrarPenalidadPosterior(sc);
+                case 8 -> gestionarPenalidades(sc);
+                case 9 -> registrarSala(sc, new SalaDAO());
+                case 10 -> listarSalas(new SalaDAO());
+                case 11 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -449,6 +456,13 @@ public class Main {
 
     private static void solicitarPrestamo(Scanner sc, SolicitudDAO solDAO, RecursoDAO recursoDAO, Usuario u) {
 
+        PenalidadDAO penalidadDAO = new PenalidadDAO();
+        if (penalidadDAO.tienePenalidadActiva(u.getId())) {
+            System.out.println("❌ No puede solicitar préstamo: tiene una penalidad activa.");
+            return;
+        }
+        
+        
         System.out.println("\nSeleccione el tipo de material:");
         System.out.println("1. Libro");
         System.out.println("2. Tesis");
@@ -487,39 +501,10 @@ public class Main {
         System.out.print("ID de copia a solicitar: ");
         int copiaID = Integer.parseInt(sc.nextLine());
 
-        try {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-            System.out.print("Fecha de préstamo (yyyy-MM-dd): ");
-            String fPrestamoStr = sc.nextLine();
-            java.util.Date fechaPrestamo = sdf.parse(fPrestamoStr);
-
-            System.out.print("Fecha de devolución (yyyy-MM-dd): ");
-            String fDevolStr = sc.nextLine();
-            java.util.Date fechaDevolucion = sdf.parse(fDevolStr);
-
-            long dias = (fechaDevolucion.getTime() - fechaPrestamo.getTime()) / (1000L * 60 * 60 * 24);
-
-            if (dias < 0) {
-                System.out.println("❌ La fecha de devolución no puede ser anterior a la fecha de préstamo.");
-                return;
-            }
-
-            if (dias > 7) {
-                System.out.println("❌ El préstamo no puede exceder 7 días.");
-                return;
-            }
-
-            Timestamp tsPrestamo = new Timestamp(fechaPrestamo.getTime());
-            Timestamp tsDevol = new Timestamp(fechaDevolucion.getTime());
-
-            if (solDAO.crearSolicitudConFechas(u.getId(), tipoStr, copiaID, tsPrestamo, tsDevol))
-                System.out.println("✔ Solicitud registrada con fechas.");
-            else
-                System.out.println("Error creando solicitud.");
-
-        } catch (Exception e) {
-            System.out.println("Formato incorrecto. Debe usar YYYY-MM-DD.");
+        if (solDAO.crearSolicitud(u.getId(), tipoStr, copiaID)) {
+            System.out.println("✔ Solicitud registrada.");
+        } else {
+            System.out.println("Error creando solicitud.");
         }
     }
 
@@ -606,6 +591,123 @@ public class Main {
             System.out.println("Error actualizando estado.");
         }
     }
+
+    private static void registrarDevolucion(Scanner sc) {
+
+        PrestamoDAO prestamoDAO = new PrestamoDAO();
+        PrestamoService prestamoService = new PrestamoService();
+
+        System.out.println("=== Registrar devolución de préstamo ===");
+        System.out.print("Ingrese ID del préstamo: ");
+        int prestamoId = Integer.parseInt(sc.nextLine());
+
+        Prestamo prestamo = prestamoDAO.obtenerPorId(prestamoId); // AJUSTA al nombre real
+        if (prestamo == null) {
+            System.out.println("No se encontró el préstamo.");
+            return;
+        }
+
+        System.out.println("Seleccione estado de la devolución:");
+        System.out.println("1) Devuelto normal");
+        System.out.println("2) Devuelto con daño (solo físicos)");
+        System.out.println("3) No devuelto (pérdida, solo físicos)");
+        System.out.println("4) Solo registrar (digital o físico), el sistema calculará retraso");
+
+        int opcion = Integer.parseInt(sc.nextLine());
+
+        // monto para daño o pérdida
+        BigDecimal montoExtra = BigDecimal.ZERO;
+        if (opcion == 2 || opcion == 3) {
+            System.out.print("Ingrese monto por daño/pérdida: ");
+            montoExtra = new BigDecimal(sc.nextLine());
+        }
+
+        boolean ok = prestamoService.devolverRecursoConPenalidad(
+                prestamo,
+                opcion,
+                montoExtra
+        );
+
+        if (ok) {
+            System.out.println("✔ Devolución registrada correctamente.");
+        } else {
+            System.out.println("❌ Error registrando la devolución.");
+        }
+    }
+
+    private static void registrarPenalidadPosterior(Scanner sc) {
+        PrestamoDAO prestamoDAO = new PrestamoDAO();
+        PrestamoService prestamoService = new PrestamoService();
+
+        System.out.println("=== Registrar penalidad posterior ===");
+        System.out.print("Ingrese ID del préstamo: ");
+        int prestamoId = Integer.parseInt(sc.nextLine());
+
+        Prestamo prestamo = prestamoDAO.obtenerPorId(prestamoId);
+        if (prestamo == null) {
+            System.out.println("No se encontró el préstamo.");
+            return;
+        }
+
+        if (prestamo.getFechaDevolucion() == null) {
+            System.out.println("El préstamo aún no ha sido devuelto. Use la opción de devolución.");
+            return;
+        }
+
+        System.out.println("Tipo de penalidad:");
+        System.out.println("2) Daño");
+        System.out.println("3) Pérdida");
+        int tipo = Integer.parseInt(sc.nextLine());
+
+        System.out.print("Monto de la penalidad: ");
+        BigDecimal monto = new BigDecimal(sc.nextLine());
+
+        boolean ok = prestamoService.registrarPenalidadPosterior(
+                prestamo,
+                tipo,
+                monto,
+                "Penalidad registrada luego del inventario"
+        );
+
+        if (ok) {
+            System.out.println("✔ Penalidad registrada.");
+        } else {
+            System.out.println("❌ No se pudo registrar la penalidad.");
+        }
+    }
+
+    private static void gestionarPenalidades(Scanner sc) {
+        PenalidadDAO penalidadDAO = new PenalidadDAO();
+
+        System.out.print("Ingrese ID de la persona: ");
+        int personaId = Integer.parseInt(sc.nextLine());
+
+        List<Penalidad> activas = penalidadDAO.listarPenalidadesActivasPorPersona(personaId);
+
+        if (activas.isEmpty()) {
+            System.out.println("No tiene penalidades activas.");
+            return;
+        }
+
+        System.out.println("Penalidades activas:");
+        for (Penalidad p : activas) {
+            System.out.println("ID: " + p.getPenalidadId() +
+                    " | Tipo: " + p.getTipoPenalidadId() +
+                    " | Monto: " + p.getMonto());
+        }
+
+        System.out.print("Ingrese el ID de la penalidad que se ha pagado: ");
+        int penalidadId = Integer.parseInt(sc.nextLine());
+
+        if (penalidadDAO.marcarPenalidadPagada(penalidadId)) {
+            System.out.println("✔ Penalidad marcada como pagada.");
+        } else {
+            System.out.println("❌ No se pudo actualizar la penalidad.");
+        }
+    }
+
+
+
     // ================= REGISTRAR SALA =================
 
 private static void registrarSala(Scanner sc, SalaDAO salaDAO) {

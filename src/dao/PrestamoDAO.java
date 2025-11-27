@@ -2,8 +2,11 @@ package dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+
+import modelo.Prestamo;
 
 public class PrestamoDAO {
     
@@ -52,5 +55,38 @@ public class PrestamoDAO {
             System.out.println("Error registrando devolución: " + e.getMessage());
             return false;
         }
+    }
+
+    public Prestamo obtenerPorId(int prestamoId) {
+
+        String sql = "SELECT PrestamoID, CopiaID, PersonaID, " +
+                     "       FechaPrestamo, FechaVencimiento, FechaDevolucion, EstadoPrestamo " +
+                     "FROM Prestamo " +
+                     "WHERE PrestamoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, prestamoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Prestamo(
+                            rs.getInt("PrestamoID"),
+                            rs.getInt("CopiaID"),
+                            rs.getInt("PersonaID"),
+                            rs.getTimestamp("FechaPrestamo"),
+                            rs.getTimestamp("FechaVencimiento"),
+                            rs.getTimestamp("FechaDevolucion"),
+                            rs.getString("EstadoPrestamo")
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error obteniendo préstamo por ID: " + e.getMessage());
+        }
+
+        return null;
     }
 }
