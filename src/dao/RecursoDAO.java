@@ -65,7 +65,7 @@ public class RecursoDAO {
         String sql;
 
         if (esDigital) {
-            // Digitales: basta que el recurso exista
+            
             sql = """
                 SELECT r.RecursoID, r.Titulo, r.Descripcion, r.TipoRecursoID
                 FROM Recurso r
@@ -73,7 +73,7 @@ public class RecursoDAO {
                 WHERE t.NombreTipo = ?
                 """;
         } else {
-            // Físicos: deben tener al menos una copia disponible (EstadoID = 1)
+
             sql = """
                 SELECT DISTINCT r.RecursoID, r.Titulo, r.Descripcion, r.TipoRecursoID
                 FROM Recurso r

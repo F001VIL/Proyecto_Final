@@ -3,12 +3,14 @@ package servicio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 import modelo.Prestamo;
 import modelo.Solicitud;
 import modelo.Usuario;
 import dao.UsuarioDAO;
+import dao.PenalidadDAO;
 import dao.PrestamoDAO;
 import dao.RecursoCopiaDAO;
 import dao.RecursoDAO;
@@ -19,15 +21,17 @@ public class PrestamoService {
     private final RecursoCopiaDAO recursoCopiaDAO = new RecursoCopiaDAO();
     private final RecursoDAO recursoDAO = new RecursoDAO();
     private final UsuarioDAO usuarioDAO = new UsuarioDAO();
+    private final PenalidadDAO penalidadDAO = new PenalidadDAO();
 
     private static final int MAX_ITEMS_SIMULTANEOS = 5;
     private static final int DIAS_MAX_PRESTAMO = 14;
+    private static final BigDecimal MONTO_RETRASO_POR_DIA = new BigDecimal("1.00");
 
-    // Prestar un recurso a un usuario
+    
     public boolean prestarRecurso(Solicitud solicitud) {
-        // 1) Obtener el usuario y su personaId
+        
         int usuarioId = solicitud.getUsuarioId();
-        int copiaId   = solicitud.getMaterialId(); // aquí estás guardando el CopiaID
+        int copiaId   = solicitud.getMaterialId();
 
         Usuario u = usuarioDAO.obtenerPorId(usuarioId);
         if (u == null) {
@@ -36,7 +40,12 @@ public class PrestamoService {
         }
         int personaId = u.getPersonaId();
 
-        // 2) Verificar máximo de préstamos activos para esa persona
+        if (penalidadDAO.tienePenalidadActiva(personaId)) {
+            System.out.println("❌ El usuario tiene una penalidad activa y no puede realizar préstamos.");
+            return false;
+        }
+
+        // Verificar cantidad de préstamos activos
         List<Prestamo> activos = recursoDAO.listarPrestamosActivos(personaId);
         if (activos.size() >= MAX_ITEMS_SIMULTANEOS) {
             System.out.println("El usuario ya alcanzó el máximo de préstamos simultáneos ("
@@ -44,14 +53,14 @@ public class PrestamoService {
             return false;
         }
 
-        // 3) Calcular fechas de préstamo y vencimiento
+        
         LocalDateTime ahora = LocalDateTime.now();
         LocalDateTime vence = ahora.plusDays(DIAS_MAX_PRESTAMO);
 
         Timestamp fechaPrestamo    = Timestamp.valueOf(ahora);
         Timestamp fechaVencimiento = Timestamp.valueOf(vence);
 
-        // 4) Insertar en tabla Prestamo
+        
         boolean okPrestamo = prestamoDAO.registrarPrestamo(
                 copiaId,
                 personaId,
@@ -59,7 +68,7 @@ public class PrestamoService {
                 fechaVencimiento
         );
 
-        // 5) Si se creó el préstamo, marcar la copia como PRESTADA (EstadoID = 2)
+        // Actualizar estado de la copia a "prestada"
         if (okPrestamo) {
             boolean okEstado = recursoCopiaDAO.actualizarEstadoCopia(copiaId, 2);
             if (!okEstado) {
@@ -71,7 +80,7 @@ public class PrestamoService {
         return false;
     }
 
-    // Devolver un recurso prestado
+    
     public boolean devolverRecurso(Prestamo prestamo) {
         int prestamoId = prestamo.getPrestamoId();
         int copiaId = prestamo.getCopiaId();
@@ -79,10 +88,10 @@ public class PrestamoService {
         LocalDateTime ahora = LocalDateTime.now();
         Timestamp fechaDevolucion = Timestamp.valueOf(ahora);
 
-        // 1) Marcar préstamo como devuelto
+        
         boolean okPrestamo = prestamoDAO.registrarDevolucion(prestamoId, fechaDevolucion);
 
-        // 2) Volver a poner la copia como Disponible (EstadoID = 1)
+        
         if (okPrestamo) {
             boolean okEstado = recursoCopiaDAO.actualizarEstadoCopia(copiaId, 1);
             if (!okEstado) {
@@ -92,5 +101,92 @@ public class PrestamoService {
         }
 
         return false;
+    }
+
+
+    public boolean devolverRecursoConPenalidad(Prestamo prestamo,int opcionDevolucion,BigDecimal montoDanioOPerdida) {
+
+        int prestamoId = prestamo.getPrestamoId();        
+        int personaId  = prestamo.getPersonaId();
+        int copiaId    = prestamo.getCopiaId();
+
+        if (prestamo.getFechaDevolucion() != null) {
+            System.out.println("⚠ Este préstamo ya fue devuelto el: " + prestamo.getFechaDevolucion());
+            System.out.println("   No se puede registrar una devolución nuevamente.");
+            return false;
+        }
+
+        //Registrar devolución en la BD (fecha actual)
+        Timestamp ahora = new Timestamp(System.currentTimeMillis());
+        boolean okDevol = prestamoDAO.registrarDevolucion(prestamoId, ahora);
+        if (!okDevol) {
+            System.out.println("Error registrando la devolución.");
+            return false;
+        }
+
+        //Calcular retraso (si ahora > fechaFin)
+        Timestamp fechaFin = prestamo.getFechaVencimiento();
+        long diasRetraso = (ahora.getTime() - fechaFin.getTime()) / (1000L * 60 * 60 * 24);
+
+        //Penalidad por retraso (físico o digital)
+        if (diasRetraso > 0) {
+            penalidadDAO.registrarPenalidadPorRetraso(
+                    prestamoId,
+                    personaId,
+                    diasRetraso,
+                    MONTO_RETRASO_POR_DIA
+            );
+        }
+
+        
+        if (opcionDevolucion == 2) {
+            // daño
+            penalidadDAO.registrarPenalidadPorDanio(
+                    prestamoId,
+                    personaId,
+                    montoDanioOPerdida,
+                    "Daño reportado por bibliotecario"
+            );
+        } else if (opcionDevolucion == 3) {
+            // pérdida
+            penalidadDAO.registrarPenalidadPorPerdida(
+                    prestamoId,
+                    personaId,
+                    montoDanioOPerdida,
+                    "Pérdida del recurso"
+            );
+        }
+
+        recursoCopiaDAO.actualizarEstadoCopia(
+                copiaId,
+                1 
+        );
+
+        return true;
+    }
+
+
+    public boolean registrarPenalidadPosterior(Prestamo prestamo,int tipoPenalidad,BigDecimal monto,String observacion) {
+
+        int prestamoId = prestamo.getPrestamoId();
+        int personaId  = prestamo.getPersonaId();
+
+        if (prestamo.getFechaDevolucion() == null) {
+            System.out.println("⚠ El préstamo aún no se ha devuelto. Use la opción de devolución.");
+            return false;
+        }
+
+        if (tipoPenalidad == 2) {
+            return penalidadDAO.registrarPenalidadPorDanio(
+                    prestamoId, personaId, monto, observacion
+            );
+        } else if (tipoPenalidad == 3) {
+            return penalidadDAO.registrarPenalidadPorPerdida(
+                    prestamoId, personaId, monto, observacion
+            );
+        } else {
+            System.out.println("Tipo de penalidad no válido.");
+            return false;
+        }
     }
 }
