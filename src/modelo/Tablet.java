@@ -1,16 +1,28 @@
 package modelo;
 
 public class Tablet extends TechnicalResource{
+    private String brand;
+    private String model;
     private String processor;
     private int ram; // in GB
     private int storage; // in GB
     private int batteryLife; // in hours
 
-    public Tablet(String processor, int ram, int storage, int batteryLife) {
+    public Tablet(String brand, String model, String processor, int ram, int storage, int batteryLife) {
+        this.brand = brand;
+        this.model = model;
         this.processor = processor;
         this.ram = ram;
         this.storage = storage;
         this.batteryLife = batteryLife;
+    }
+
+    public String getBrand() {
+        return brand;
+    }
+
+    public String getModel() {
+        return model;
     }
 
     public String getProcessor() {
