@@ -1,12 +1,12 @@
 package modelo;
 
 public class DesktopPc extends Computer {
-    private String graphicsCard;
+    private GraphicCard graphicsCard;
     private Monitor monitor;
     private Keyboard keyboard;
     private Mouse mouse;
 
-    public DesktopPc(String processor, int ram, int storage, int disk, String graphicsCard, Monitor monitor, Keyboard keyboard, Mouse mouse) {
+    public DesktopPc(String processor, int ram, int storage, int disk, GraphicCard graphicsCard, Monitor monitor, Keyboard keyboard, Mouse mouse) {
         super(processor, ram, storage, disk);
         this.graphicsCard = graphicsCard;
         this.monitor = monitor;
@@ -14,7 +14,7 @@ public class DesktopPc extends Computer {
         this.mouse = mouse;
     }
 
-    public String getGraphicsCard() {
+    public GraphicCard getGraphicsCard() {
         return graphicsCard;
     }
 
