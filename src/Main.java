@@ -256,7 +256,8 @@ public class Main {
             System.out.println("8. Ver penalidades y registrar pago");
             System.out.println("9. Registrar sala");
             System.out.println("10. Ver salas");
-            System.out.println("11. Salir");
+            System.out.println("11. Eliminar recurso");
+            System.out.println("12. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -272,11 +273,49 @@ public class Main {
                 case 8 -> gestionarPenalidades(sc);
                 case 9 -> registrarSala(sc, new SalaDAO());
                 case 10 -> listarSalas(new SalaDAO());
-                case 11 -> { return; }
+                case 11 -> eliminarRecurso(sc, recursoDAO);
+                case 12 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
     }
+    private static void eliminarRecurso(Scanner sc, RecursoDAO recursoDAO) {
+    System.out.println("\n=== ELIMINAR RECURSO ===");
+
+    List<Recurso> disponibles = recursoDAO.listarDisponibles();
+
+    if (disponibles.isEmpty()) {
+        System.out.println("No hay recursos registrados.");
+        return;
+    }
+
+    System.out.println("\n--- RECURSOS DISPONIBLES ---");
+    disponibles.forEach(r ->
+            System.out.println(
+                    "ID: " + r.getRecursoId() +
+                            " | Título: " + r.getTitulo() +
+                            " | Tipo: " + r.getTipoRecursoId()
+            )
+    );
+
+    System.out.print("\nIngrese el ID del recurso a eliminar: ");
+    int recursoId = Integer.parseInt(sc.nextLine());
+
+    System.out.print("¿Está seguro que desea eliminarlo? (s/n): ");
+    if (!sc.nextLine().equalsIgnoreCase("s")) {
+        System.out.println("Cancelado.");
+        return;
+    }
+
+    if (recursoDAO.eliminarRecurso(recursoId)) {
+        System.out.println("✔ Recurso eliminado correctamente.");
+    } else {
+        System.out.println("Error eliminando recurso.");
+    }
+
+    System.out.println("\nLista actualizada de recursos:");
+    listarMaterialesDisponibles(recursoDAO);
+}
 
     private static void listarMaterialesDisponibles(RecursoDAO recursoDAO) {
         var lista = recursoDAO.listarDisponibles();
@@ -629,9 +668,9 @@ public class Main {
         );
 
         if (ok) {
-            System.out.println("✔ Devolución registrada correctamente.");
+            System.out.println(" Devolución registrada correctamente.");
         } else {
-            System.out.println("❌ Error registrando la devolución.");
+            System.out.println(" Error registrando la devolución.");
         }
     }
 
@@ -670,9 +709,9 @@ public class Main {
         );
 
         if (ok) {
-            System.out.println("✔ Penalidad registrada.");
+            System.out.println(" Penalidad registrada.");
         } else {
-            System.out.println("❌ No se pudo registrar la penalidad.");
+            System.out.println(" No se pudo registrar la penalidad.");
         }
     }
 
@@ -700,9 +739,9 @@ public class Main {
         int penalidadId = Integer.parseInt(sc.nextLine());
 
         if (penalidadDAO.marcarPenalidadPagada(penalidadId)) {
-            System.out.println("✔ Penalidad marcada como pagada.");
+            System.out.println(" Penalidad marcada como pagada.");
         } else {
-            System.out.println("❌ No se pudo actualizar la penalidad.");
+            System.out.println(" No se pudo actualizar la penalidad.");
         }
     }
 

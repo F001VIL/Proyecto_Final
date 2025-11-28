@@ -6,7 +6,9 @@ import java.util.List;
 
 public class RecursoCopiaDAO {
 
-    // Obtener copias disponibles por recurso
+    // ==========================================================
+    //      OBTENER COPIAS DISPONIBLES POR RECURSO
+    // ==========================================================
     public List<Integer> obtenerCopiasDisponibles(int recursoId) {
         List<Integer> copias = new ArrayList<>();
 
@@ -30,7 +32,9 @@ public class RecursoCopiaDAO {
     }
 
 
-    // Actualizar estado de una copia
+    // ==========================================================
+    //      ACTUALIZAR ESTADO DE UNA COPIA
+    // ==========================================================
     public boolean actualizarEstadoCopia(int copiaId, int nuevoEstadoId) {
         String sql = "UPDATE RecursoCopia SET EstadoID = ? WHERE CopiaID = ?";
 
@@ -40,8 +44,7 @@ public class RecursoCopiaDAO {
             ps.setInt(1, nuevoEstadoId);
             ps.setInt(2, copiaId);
 
-            int filas = ps.executeUpdate();
-            return filas > 0;
+            return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
             System.out.println("Error actualizando estado de copia: " + e.getMessage());
@@ -49,6 +52,10 @@ public class RecursoCopiaDAO {
         }
     }
 
+
+    // ==========================================================
+    //      INSERTAR NUEVA COPIA FÍSICA
+    // ==========================================================
     public boolean insertarCopiaFisica(int recursoId, String codigoCopia, String ubicacion) {
         String sql = """
                 INSERT INTO RecursoCopia
@@ -70,4 +77,48 @@ public class RecursoCopiaDAO {
             return false;
         }
     }
+
+
+    // ==========================================================
+    //      OBTENER RECURSO ID DESDE COPIA → NECESARIO PARA STOCK
+    // ==========================================================
+    public int obtenerRecursoIdDesdeCopia(int copiaId) {
+        String sql = "SELECT RecursoID FROM RecursoCopia WHERE CopiaID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, copiaId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("RecursoID");
+            }
+
+        } catch (Exception e) {
+            System.out.println("Error obtenerRecursoIdDesdeCopia(): " + e.getMessage());
+        }
+
+        return -1; // No encontrado
+    }
+
+
+    // ==========================================================
+    //      ELIMINAR TODAS LAS COPIAS DE UN RECURSO
+    // ==========================================================
+    public boolean eliminarCopia(String codigoCopia) {
+    String sql = "DELETE FROM RecursoCopia WHERE CodigoCopia = ?";
+
+    try (Connection con = ConexionBD.getConnection();
+        PreparedStatement ps = con.prepareStatement(sql)) {
+
+        ps.setString(1, codigoCopia);
+        return ps.executeUpdate() > 0;
+
+    } catch (Exception e) {
+        System.out.println("Error al eliminar copia: " + e.getMessage());
+        return false;
+    }
+    }
+
 }

@@ -22,16 +22,15 @@ public class RecursoDAO {
                 LEFT JOIN RecursoCopia rc
                     ON rc.RecursoID = r.RecursoID AND rc.EstadoID = 1
                 WHERE
-                    -- FÍSICOS: necesitan copia disponible
-                    (t.NombreTipo IN ('Libro','Revista','Tablet','PC','DVD') AND rc.CopiaID IS NOT NULL)
-                    -- DIGITALES: siempre disponibles si existen
+                    (t.NombreTipo IN ('Libro','Revista','Tablet','PC','DVD') 
+                        AND rc.CopiaID IS NOT NULL)
                     OR
                     (t.NombreTipo IN ('Tesis','Audiolibro','Multimedia'))
                 """;
 
         try (Connection con = ConexionBD.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery()) {
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 lista.add(
@@ -52,12 +51,11 @@ public class RecursoDAO {
     }
 
     // ---------------------------------------------------------
-    // LISTAR RECURSOS DISPONIBLES POR TIPO
+    // LISTAR RECURSOS DISPONIBLES POR TIPO (Libro, Tesis, etc.)
     // ---------------------------------------------------------
     public List<Recurso> listarDisponiblesPorTipo(String tipo) {
         List<Recurso> lista = new ArrayList<>();
 
-        // tipos que trataremos como DIGITALES
         boolean esDigital = tipo.equalsIgnoreCase("Tesis")
                         || tipo.equalsIgnoreCase("Audiolibro")
                         || tipo.equalsIgnoreCase("Multimedia");
@@ -65,7 +63,6 @@ public class RecursoDAO {
         String sql;
 
         if (esDigital) {
-            
             sql = """
                 SELECT r.RecursoID, r.Titulo, r.Descripcion, r.TipoRecursoID
                 FROM Recurso r
@@ -73,7 +70,6 @@ public class RecursoDAO {
                 WHERE t.NombreTipo = ?
                 """;
         } else {
-
             sql = """
                 SELECT DISTINCT r.RecursoID, r.Titulo, r.Descripcion, r.TipoRecursoID
                 FROM Recurso r
@@ -84,7 +80,7 @@ public class RecursoDAO {
         }
 
         try (Connection con = ConexionBD.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql)) {
+             PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setString(1, tipo);
             try (ResultSet rs = ps.executeQuery()) {
@@ -148,6 +144,9 @@ public class RecursoDAO {
         return lista;
     }
 
+    // ---------------------------------------------------------
+    // INSERTAR NUEVO RECURSO
+    // ---------------------------------------------------------
     public int insertarRecurso(String titulo, String descripcion, int tipoRecursoId) {
         String sql = """
                 INSERT INTO Recurso (Titulo, Descripcion, TipoRecursoID)
@@ -166,7 +165,7 @@ public class RecursoDAO {
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    return rs.getInt(1); // RecursoID generado
+                    return rs.getInt(1);
                 }
             }
 
@@ -176,6 +175,9 @@ public class RecursoDAO {
         return -1;
     }
 
+    // ---------------------------------------------------------
+    // INSERTAR DATOS DIGITALES (PDF, MP3, URL, etc.)
+    // ---------------------------------------------------------
     public boolean insertarAccesoDigital(int recursoId, String url, String licencia, int usuariosConc) {
         String sql = """
                 INSERT INTO AccesoDigital (RecursoID, URLAcceso, Licencia, UsuariosConcurrentes)
@@ -194,6 +196,131 @@ public class RecursoDAO {
 
         } catch (Exception e) {
             System.out.println("Error en insertarAccesoDigital(): " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // NUEVO: VERIFICAR SI EL RECURSO EXISTE
+    // ---------------------------------------------------------
+    public boolean existeRecurso(int recursoId) {
+        String sql = "SELECT COUNT(*) FROM Recurso WHERE RecursoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) return rs.getInt(1) > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error en existeRecurso(): " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    // ---------------------------------------------------------
+    // NUEVO: ELIMINAR RECURSO
+    // ---------------------------------------------------------
+    public boolean eliminarRecurso(int recursoId) {
+
+    String sqlRecurso = "DELETE FROM Recurso WHERE RecursoID = ?";
+
+    try (Connection con = ConexionBD.getConnection()) {
+
+        con.setAutoCommit(false); // TRANSACTION
+
+        // 1. Eliminar copias
+        try (PreparedStatement ps1 = con.prepareStatement(
+                "DELETE FROM RecursoCopia WHERE RecursoID = ?")) {
+            ps1.setInt(1, recursoId);
+            ps1.executeUpdate();
+        }
+
+        // 2. Eliminar accesos digitales
+        try (PreparedStatement ps2 = con.prepareStatement(
+                "DELETE FROM AccesoDigital WHERE RecursoID = ?")) {
+            ps2.setInt(1, recursoId);
+            ps2.executeUpdate();
+        }
+
+        // 3. Eliminar recurso
+        try (PreparedStatement ps3 = con.prepareStatement(sqlRecurso)) {
+            ps3.setInt(1, recursoId);
+
+            int filas = ps3.executeUpdate();
+
+            if (filas == 0) {
+                con.rollback();
+                return false;
+            }
+        }
+
+        con.commit();
+        return true;
+
+    } catch (Exception e) {
+        System.out.println("Error eliminando recurso: " + e.getMessage());
+        return false;
+    }
+}
+
+
+    // ---------------------------------------------------------
+    // NUEVO: OBTENER STOCK
+    // ---------------------------------------------------------
+    public int obtenerStock(int recursoId) {
+        String sql = "SELECT Stock FROM Recurso WHERE RecursoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) return rs.getInt("Stock");
+
+        } catch (Exception e) {
+            System.out.println("Error en obtenerStock(): " + e.getMessage());
+        }
+
+        return -1;
+    }
+
+    // ---------------------------------------------------------
+    // NUEVO: DISMINUIR STOCK AL PRESTAR
+    // ---------------------------------------------------------
+    public boolean disminuirStock(int recursoId) {
+        String sql = "UPDATE Recurso SET Stock = Stock - 1 WHERE RecursoID = ? AND Stock > 0";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error en disminuirStock(): " + e.getMessage());
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------
+    // NUEVO: AUMENTAR STOCK AL DEVOLVER
+    // ---------------------------------------------------------
+    public boolean aumentarStock(int recursoId) {
+        String sql = "UPDATE Recurso SET Stock = Stock + 1 WHERE RecursoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("Error en aumentarStock(): " + e.getMessage());
             return false;
         }
     }
