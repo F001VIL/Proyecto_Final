@@ -7,12 +7,14 @@ public abstract class Material {
     private int id;
     private String title;
     private String author;
+    private String language;
     private LocalDate publicationDate;
 
-    public Material(int id, String title, String author, LocalDate publicationDate) {
+    public Material(int id, String title, String author, String language ,LocalDate publicationDate) {
         this.id = id;
         this.title = title;
         this.author = author;
+        this.language = language;
         this.publicationDate = publicationDate;
     }
 
@@ -38,6 +40,14 @@ public abstract class Material {
 
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+    
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
     public LocalDate getPublicationDate() {

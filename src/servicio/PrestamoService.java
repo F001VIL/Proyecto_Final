@@ -11,12 +11,14 @@ import modelo.Usuario;
 import dao.UsuarioDAO;
 import dao.PenalidadDAO;
 import dao.PrestamoDAO;
+import dao.PrestamoDigitalDAO;
 import dao.RecursoCopiaDAO;
 import dao.RecursoDAO;
 
 public class PrestamoService {
     
     private final PrestamoDAO prestamoDAO = new PrestamoDAO();
+    private final PrestamoDigitalDAO prestamoDigitalDAO = new PrestamoDigitalDAO();
     private final RecursoCopiaDAO recursoCopiaDAO = new RecursoCopiaDAO();
     private final RecursoDAO recursoDAO = new RecursoDAO();
     private final UsuarioDAO usuarioDAO = new UsuarioDAO();
@@ -24,6 +26,7 @@ public class PrestamoService {
 
     private static final int MAX_ITEMS_SIMULTANEOS = 5;
     private static final int DIAS_MAX_PRESTAMO = 14;
+    private static final int MAX_PRESTAMOS_DIGITALES = 3;
     private static final BigDecimal MONTO_RETRASO_POR_DIA = new BigDecimal("1.00");
 
 
@@ -33,7 +36,7 @@ public class PrestamoService {
     public boolean prestarRecurso(Solicitud solicitud) {
         
         int usuarioId = solicitud.getUsuarioId();
-        int copiaId   = solicitud.getMaterialId();
+        int recursoId = solicitud.getMaterialId(); 
 
         Usuario u = usuarioDAO.obtenerPorId(usuarioId);
         if (u == null) {
@@ -55,18 +58,16 @@ public class PrestamoService {
             return false;
         }
 
-        // 3. Obtener el ID del recurso para actualizar stock
-        int recursoId = recursoCopiaDAO.obtenerRecursoIdDesdeCopia(copiaId);
-        if (recursoId == -1) {
-            System.out.println("No se pudo obtener el recurso asociado.");
+        // 3. Buscar una copia física disponible
+        List<Integer> copias = recursoCopiaDAO.obtenerCopiasDisponibles(recursoId);
+        if (copias.isEmpty()) {
+            System.out.println("❌ No hay copias disponibles para este recurso.");
             return false;
         }
 
-        // 4. Disminuir stock antes del préstamo
-        if (!recursoDAO.disminuirStock(recursoId)) {
-            System.out.println("❌ No hay stock disponible.");
-            return false;
-        }
+        int copiaId = copias.get(0);
+        System.out.println("Copia asignada al préstamo: ID copia = " + copiaId);
+
 
         // 5. Fechas de préstamo
         LocalDateTime ahora = LocalDateTime.now();
@@ -93,6 +94,56 @@ public class PrestamoService {
         return true;
     }
 
+    // ==========================================================
+    //               APROBAR SOLICITUD → PRESTAR RECURSO DIGITAL
+    // ==========================================================
+
+    public boolean prestarRecursoDigital(Solicitud solicitud) {
+
+        prestamoDigitalDAO.cerrarPrestamosVencidos();
+
+        int personaId = solicitud.getUsuarioId();
+        int recursoId = solicitud.getMaterialId(); 
+
+      
+        // 1) Validar usuario
+        Usuario usuario = usuarioDAO.obtenerPorId(personaId);
+        if (usuario == null) {
+            System.out.println("Usuario no encontrado.");
+            return false;
+        }
+
+        // 2) Validar que no tenga penalidad activa
+        if (penalidadDAO.tienePenalidadActiva(personaId)) {
+            System.out.println("El usuario tiene penalidades activas. No puede realizar préstamos.");
+            return false;
+        }
+
+        // 3) Validar límite de préstamos digitales activos
+        int activos = prestamoDigitalDAO.contarPrestamosActivosPorPersona(personaId);
+        if (activos >= MAX_PRESTAMOS_DIGITALES) {
+            System.out.println("Ya tiene " + activos + " préstamos digitales activos. "
+                    + "Debe devolver alguno para pedir otro.");
+            return false;
+        }
+
+        // 4) Fechas de préstamo (puedes ajustar los días)
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime venc = ahora.plusDays(7); // por ejemplo, 7 días para recursos digitales
+
+        Timestamp fPrestamo = Timestamp.valueOf(ahora);
+        Timestamp fVenc = Timestamp.valueOf(venc);
+
+        // 5) Registrar préstamo digital
+        boolean ok = prestamoDigitalDAO.registrarPrestamoDigital(recursoId, personaId, fPrestamo, fVenc);
+
+        if (ok) {
+            System.out.println("✔ Préstamo DIGITAL registrado correctamente.");
+        }
+
+        return ok;
+    }
+
 
     // ==========================================================
     //                  DEVOLVER SIN PENALIDADES
@@ -113,6 +164,8 @@ public class PrestamoService {
         int recursoId = recursoCopiaDAO.obtenerRecursoIdDesdeCopia(copiaId);
         recursoDAO.aumentarStock(recursoId);
 
+
+        recursoCopiaDAO.actualizarEstadoCopia(copiaId, 1); 
         return true;
     }
 

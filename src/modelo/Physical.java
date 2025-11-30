@@ -7,12 +7,18 @@ public abstract class Physical extends Material {
     private String format;
     private String sede;
     private int stock;
+    private String isbn;
+    private String editorial;
+    private String edition;
 
-    public Physical(int id, String title, String author, LocalDate publicationDate, String format, String sede, int stock) {
-        super(id, title, author, publicationDate);
+    public Physical(int id, String title, String author, String language ,LocalDate publicationDate, String format, String sede, int stock, String isbn, String editorial, String edition ) {
+        super(id, title, author, language, publicationDate);
         this.format = format;
         this.sede = sede;
         this.stock = stock;
+        this.isbn = isbn;
+        this.editorial = editorial;
+        this.edition = edition;
     }
 
     public String getFormat() {
@@ -37,6 +43,31 @@ public abstract class Physical extends Material {
 
     public void setStock(int stock) {
         this.stock = stock;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+
+    public String getEditorial() {
+        return editorial;
+    }
+
+    public void setEditorial(String editorial) {
+        this.editorial = editorial;
+    }
+
+    public String getEdition() {
+        return edition;
+    }
+
+    public void setEdition(String edition) {
+        this.edition = edition;
     }
 
     public String getInfo(){
