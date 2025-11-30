@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import modelo.Prestamo;
 
@@ -89,4 +91,33 @@ public class PrestamoDAO {
 
         return null;
     }
+
+    public List<Prestamo> listarPrestamosActivos() {
+        String sql = "SELECT * FROM Prestamo WHERE FechaDevolucion IS NULL";
+        List<Prestamo> lista = new ArrayList<>();
+
+        try (Connection con = ConexionBD.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Prestamo p = new Prestamo(
+                        rs.getInt("PrestamoID"),
+                        rs.getInt("CopiaID"),
+                        rs.getInt("PersonaID"),
+                        rs.getTimestamp("FechaPrestamo"),
+                        rs.getTimestamp("FechaVencimiento"),
+                        rs.getTimestamp("FechaDevolucion"),
+                        rs.getString("EstadoPrestamo")
+                );
+                lista.add(p);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error listando préstamos activos: " + e.getMessage());
+        }
+
+        return lista;
+    }
+
 }

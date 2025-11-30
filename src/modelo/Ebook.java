@@ -6,13 +6,16 @@ public class Ebook extends Digital{
 
     private int pages;
     private String isbn;
-    private String language;
+    private String editorial;
+    private String edition;
+    
 
-    public Ebook(int id, String title, String author, LocalDate publicationDate, String format, int fileSize, int pages, String isbn, String language) {
-        super(id, title, author, publicationDate, format, fileSize);
+    public Ebook(int id, String title, String author, String language, LocalDate publicationDate, String format, int fileSize, int pages, String isbn, String editorial, String edition) {
+        super(id, title, author, language ,publicationDate, format, fileSize);
         this.pages = pages;
         this.isbn = isbn;
-        this.language = language;
+        this.editorial = editorial;
+        this.edition = edition;
     }
 
     public int getPages() {
@@ -31,12 +34,17 @@ public class Ebook extends Digital{
         this.isbn = isbn;
     }
 
-    public String getLanguage() {
-        return language;
+    public String getEditorial() {
+        return editorial;
     }
-
-    public void setLanguage(String language) {
-        this.language = language;
+    public void setEditorial(String editorial) {
+        this.editorial = editorial;
+    }
+    public String getEdition() {
+        return edition;
+    }
+    public void setEdition(String edition) {
+        this.edition = edition;
     }
 
     @Override

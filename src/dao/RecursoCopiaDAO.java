@@ -4,6 +4,8 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import modelo.RecursoCopia;
+
 public class RecursoCopiaDAO {
 
     // ==========================================================
@@ -119,6 +121,126 @@ public class RecursoCopiaDAO {
         System.out.println("Error al eliminar copia: " + e.getMessage());
         return false;
     }
+    }
+
+    public List<RecursoCopia> listarCopiasPorRecurso(int recursoId) {
+        List<RecursoCopia> lista = new ArrayList<>();
+
+        String sql = "SELECT CopiaID, RecursoID, CodigoCopia, Ubicacion, EstadoID " +
+                    "FROM RecursoCopia WHERE RecursoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RecursoCopia c = new RecursoCopia();
+                    c.setCopiaId(rs.getInt("CopiaID"));
+                    c.setRecursoId(rs.getInt("RecursoID"));
+                    c.setCodigoCopia(rs.getString("CodigoCopia"));
+                    c.setUbicacion(rs.getString("Ubicacion"));
+                    c.setEstadoId(rs.getInt("EstadoID"));
+                    lista.add(c);
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error listando copias por recurso: " + e.getMessage());
+        }
+        return lista;
+    }
+
+    public RecursoCopia obtenerPorId(int copiaId) {
+        String sql = "SELECT CopiaID, RecursoID, CodigoCopia, Ubicacion, EstadoID " +
+                    "FROM RecursoCopia WHERE CopiaID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, copiaId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    RecursoCopia c = new RecursoCopia();
+                    c.setCopiaId(rs.getInt("CopiaID"));
+                    c.setRecursoId(rs.getInt("RecursoID"));
+                    c.setCodigoCopia(rs.getString("CodigoCopia"));
+                    c.setUbicacion(rs.getString("Ubicacion"));
+                    c.setEstadoId(rs.getInt("EstadoID"));
+                    return c;
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error obteniendo copia por ID: " + e.getMessage());
+        }
+        return null;
+    }
+    public boolean actualizarCodigoUbicacion(int copiaId,String nuevoCodigo,String nuevaUbicacion) {
+        String sql = """
+            UPDATE RecursoCopia
+            SET CodigoCopia = ?,
+                Ubicacion = ?
+            WHERE CopiaID = ?
+            """;
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nuevoCodigo);
+            ps.setString(2, nuevaUbicacion);
+            ps.setInt(3, copiaId);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error actualizando copia (código/ubicación): " + e.getMessage());
+            return false;
+        }
+    }
+
+    public int contarCopiasFisicas(int recursoId) {
+        String sql = "SELECT COUNT(*) FROM RecursoCopia WHERE RecursoID = ?";
+        
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error contando copias físicas: " + e.getMessage());
+        }
+        return 0;
+    }
+
+
+    public int contarCopiasDisponibles(int recursoId) {
+        String sql = """
+            SELECT COUNT(*)
+            FROM RecursoCopia
+            WHERE RecursoID = ?
+            AND EstadoID = 1   -- Disponible
+        """;
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, recursoId);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) return rs.getInt(1);
+
+        } catch (SQLException e) {
+            System.out.println("Error contando copias disponibles: " + e.getMessage());
+        }
+        return 0;
     }
 
 }

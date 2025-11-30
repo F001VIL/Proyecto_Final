@@ -9,8 +9,8 @@ public abstract class Digital extends Material {
     private String licencia;
     private int usuariosConcurrentes;
 
-    public Digital(int id, String title, String author, LocalDate publicationDate, String format, int fileSize) {
-        super(id, title, author, publicationDate);
+    public Digital(int id, String title, String author, String language, LocalDate publicationDate, String format, int fileSize) {
+        super(id, title, author, language ,publicationDate);
         this.format = format;
         this.fileSize = fileSize;
     }
