@@ -196,5 +196,28 @@ public class PenalidadDAO {
             return false;
         }
     }
+
+
+    public boolean existePenalidadPorPrestamo(int prestamoId) {
+        String sql = "SELECT COUNT(*) FROM Penalidad WHERE PrestamoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setInt(1, prestamoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int count = rs.getInt(1);
+                    return count > 0;  // true si ya hay penalidad asociada
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error verificando penalidad por préstamo: " + e.getMessage());
+        }
+
+        return false;
+    }
     
 }

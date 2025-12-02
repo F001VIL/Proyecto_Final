@@ -5,14 +5,11 @@ import java.time.LocalDate;
 public class Journal extends Physical {
 
     private int volume;
-    private String issn;
-    private String language;
+    
 
-    public Journal(int id, String title, String author, LocalDate publicationDate, String format, String sede, int stock, int volume, String issn, String language) {
-        super(id, title, author, publicationDate, format, sede, stock);
+    public Journal(int id, String title, String author, String language, LocalDate publicationDate, String format, String sede, int stock, String isbn, String editorial, String edition, int volume) {
+        super(id, title, author, language ,publicationDate, format, sede, stock, isbn, editorial, edition);
         this.volume = volume;
-        this.issn = issn;
-        this.language = language;
     }
 
     public int getVolume() {
@@ -21,22 +18,6 @@ public class Journal extends Physical {
 
     public void setVolume(int volume) {
         this.volume = volume;
-    }
-
-    public String getIssn() {
-        return issn;
-    }
-
-    public void setIssn(String issn) {
-        this.issn = issn;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
     }
 
     @Override

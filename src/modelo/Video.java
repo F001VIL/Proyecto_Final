@@ -6,8 +6,8 @@ public class Video extends Digital {
     private int minutes;
     private String resolution;
 
-    public Video(int id, String title, String author, LocalDate publicationDate, String format, int fileSize, int minutes, String resolution) {
-        super(id, title, author, publicationDate, format, fileSize);
+    public Video(int id, String title, String author, String language, LocalDate publicationDate, String format, int fileSize, int minutes, String resolution) {
+        super(id, title, author, language ,publicationDate, format, fileSize);
         this.minutes = minutes;
         this.resolution = resolution;
     }

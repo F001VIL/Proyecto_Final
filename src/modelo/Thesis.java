@@ -7,12 +7,16 @@ public class Thesis extends Digital{
     private String country;
     private String university;
     private String degree;
+    private String issn;
 
-    public Thesis(int id, String title, String author, LocalDate publicationDate, String format, int fileSize, String country, String university, String degree) {
-        super(id, title, author, publicationDate, format, fileSize);
+
+    public Thesis(int id, String title, String author, String language, LocalDate publicationDate, String format, int fileSize, String country, String university, String degree, String issn) {
+        super(id, title, author, language ,publicationDate, format, fileSize);
         this.country = country;
         this.university = university;
         this.degree = degree;
+        this.issn = issn;
+
     }
 
     public String getCountry() {
@@ -37,6 +41,13 @@ public class Thesis extends Digital{
 
     public void setDegree(String degree) {
         this.degree = degree;
+    }
+
+    public String getIssn() {
+        return issn;
+    }
+    public void setIssn(String issn) {
+        this.issn = issn;
     }
 
     @Override

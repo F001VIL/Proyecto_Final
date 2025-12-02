@@ -2,14 +2,18 @@ import dao.*;
 import modelo.Usuario;
 import modelo.Video;
 import servicio.PrestamoService;
+import modelo.AccesoDigital;
 import modelo.Book;
 import modelo.Digital;
 import modelo.Ebook;
 import modelo.Journal;
 import modelo.Material;
 import modelo.Penalidad;
+import modelo.Physical;
 import modelo.Prestamo;
+import modelo.PrestamoDigitalResumen;
 import modelo.Recurso;
+import modelo.RecursoCopia;
 import modelo.Solicitud;
 import modelo.Thesis;
 import modelo.ReservaSala;
@@ -185,7 +189,8 @@ public class Main {
             System.out.println("1. Solicitar préstamo");
             System.out.println("2. Reservar sala");
             System.out.println("3. Ver mis solicitudes");
-            System.out.println("4. Salir");
+            System.out.println("4. Devolver material digital");
+            System.out.println("5. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -197,9 +202,39 @@ public class Main {
                     reservarSala(sc, salaDAO, u);
                     }
                 case 3 -> verSolicitudesUsuario(solDAO, u);
-                case 4 -> { return; }
+                case 4 -> devolverMaterialDigital(sc, u.getId());
+                case 5 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
+        }
+    }
+
+    private static void devolverMaterialDigital(Scanner sc, int usuarioId) {
+
+        PrestamoDigitalDAO prestamoDigitalDAO = new PrestamoDigitalDAO();
+
+        List<PrestamoDigitalResumen> lista =
+                prestamoDigitalDAO.listarPrestamosActivosPorPersona(usuarioId);
+
+        if (lista.isEmpty()) {
+            System.out.println("No tiene préstamos digitales activos.");
+            return;
+        }
+
+        System.out.println("\n--- PRÉSTAMOS DIGITALES ACTIVOS ---");
+        for (PrestamoDigitalResumen p : lista) {
+            System.out.println("ID préstamo: " + p.getPrestamoDigitalId()
+                    + " | Título: " + p.getTitulo()
+                    + " | Vence: " + p.getFechaVencimiento());
+        }
+
+        System.out.print("Ingrese el ID del préstamo digital a devolver: ");
+        int id = Integer.parseInt(sc.nextLine());
+
+        if (prestamoDigitalDAO.devolverPrestamoDigital(id)) {
+            System.out.println("✔ Material digital devuelto. Ya puede solicitar otro.");
+        } else {
+            System.out.println("No se pudo registrar la devolución digital.");
         }
     }
 
@@ -235,6 +270,8 @@ public class Main {
         }
     }
 
+    
+
     // ==========================================================
     //                       MENU BIBLIOTECARIO
     // ==========================================================
@@ -243,6 +280,7 @@ public class Main {
         SolicitudDAO solDAO = new SolicitudDAO();
         ReservaSalaDAO salaDAO = new ReservaSalaDAO();
         RecursoDAO recursoDAO = new RecursoDAO();
+        RecursoCopiaDAO recursoCopiaDAO = new RecursoCopiaDAO();
 
         while (true) {
             System.out.println("\n--- MENÚ BIBLIOTECARIO ---");
@@ -256,14 +294,16 @@ public class Main {
             System.out.println("8. Ver penalidades y registrar pago");
             System.out.println("9. Registrar sala");
             System.out.println("10. Ver salas");
-            System.out.println("11. Salir");
+            System.out.println("11. Eliminar recurso");
+            System.out.println("12. Modificar material / copia");
+            System.out.println("13. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
 
             switch (op) {
                 case 1 -> registrarMaterial(sc, recursoDAO);
-                case 2 -> listarMaterialesDisponibles(recursoDAO);
+                case 2 -> listarMaterialesDisponibles(recursoDAO, recursoCopiaDAO);
                 case 3 -> solDAO.verSolicitudesPendientes().forEach(System.out::println);
                 case 4 -> salaDAO.listarReservas().forEach(System.out::println);
                 case 5 -> procesarSolicitudes(sc, solDAO);
@@ -272,21 +312,87 @@ public class Main {
                 case 8 -> gestionarPenalidades(sc);
                 case 9 -> registrarSala(sc, new SalaDAO());
                 case 10 -> listarSalas(new SalaDAO());
-                case 11 -> { return; }
+                case 11 -> eliminarRecurso(sc, recursoDAO, recursoCopiaDAO);
+                case 12 -> modificarMaterialOCopia(sc, recursoDAO, recursoCopiaDAO);
+                case 13 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
     }
+    private static void eliminarRecurso(Scanner sc, RecursoDAO recursoDAO, RecursoCopiaDAO recursoCopiaDAO) {
+        System.out.println("\n=== ELIMINAR RECURSO ===");
 
-    private static void listarMaterialesDisponibles(RecursoDAO recursoDAO) {
-        var lista = recursoDAO.listarDisponibles();
-        if (lista.isEmpty()) {
+        List<Recurso> disponibles = recursoDAO.listarDisponibles();
+
+        if (disponibles.isEmpty()) {
+            System.out.println("No hay recursos registrados.");
+            return;
+        }
+
+        System.out.println("\n--- RECURSOS DISPONIBLES ---");
+        disponibles.forEach(r ->
+                System.out.println(
+                        "ID: " + r.getRecursoId() +
+                                " | Título: " + r.getTitulo() +
+                                " | Tipo: " + r.getTipoRecursoId()
+                )
+        );
+
+        System.out.print("\nIngrese el ID del recurso a eliminar: ");
+        int recursoId = Integer.parseInt(sc.nextLine());
+
+        System.out.print("¿Está seguro que desea eliminarlo? (s/n): ");
+        if (!sc.nextLine().equalsIgnoreCase("s")) {
+            System.out.println("Cancelado.");
+            return;
+        }
+
+        if (recursoDAO.eliminarRecurso(recursoId)) {
+            System.out.println("✔ Recurso eliminado correctamente.");
+        } else {
+            System.out.println("Error eliminando recurso.");
+        }
+
+        System.out.println("\nLista actualizada de recursos:");
+        listarMaterialesDisponibles(recursoDAO, recursoCopiaDAO);
+    }
+
+    private static void listarMaterialesDisponibles(RecursoDAO recursoDAO, RecursoCopiaDAO copiaDAO) {
+        System.out.println("\n--- MATERIALES DISPONIBLES ---");
+        List<Recurso> recursos = recursoDAO.listarTodos();
+
+        if (recursos.isEmpty()) {
             System.out.println("No hay materiales registrados.");
             return;
         }
 
-        System.out.println("\n--- MATERIALES DISPONIBLES ---");
-        lista.forEach(System.out::println);
+        for (Recurso r : recursos) {
+
+            String tipoNombre = switch (r.getTipoRecursoId()) {
+                case 1 -> "Libro";
+                case 2 -> "Tesis";
+                case 3 -> "Libro virtual";
+                case 4 -> "Multimedia";
+                case 5 -> "Revista";
+                default -> "Desconocido";
+            };
+
+            System.out.println("\nID: " + r.getRecursoId()
+                    + " | Título: " + r.getTitulo()
+                    + " | Tipo: " + tipoNombre);
+
+            // Fisicos → mostrar copias
+            if (r.getTipoRecursoId() == 1 || r.getTipoRecursoId() == 5) {
+                int total = copiaDAO.contarCopiasFisicas(r.getRecursoId());
+                int disponibles = copiaDAO.contarCopiasDisponibles(r.getRecursoId());
+
+                System.out.println("  Copias físicas: " + total
+                        + " | Disponibles: " + disponibles);
+            } else {
+                // Digital
+                System.out.println("  Acceso digital");
+            }
+        }
     }
 
     private static void registrarMaterial(Scanner sc, RecursoDAO recursoDAO) {
@@ -305,6 +411,8 @@ public class Main {
         String titulo = sc.nextLine();
         System.out.print("Autor: ");
         String autor = sc.nextLine();
+        System.out.print("Idioma: ");
+        String language = sc.nextLine();
         System.out.print("Año de publicación: ");
         int anio = Integer.parseInt(sc.nextLine());
 
@@ -322,8 +430,14 @@ public class Main {
                 int stock = Integer.parseInt(sc.nextLine());
                 System.out.print("Páginas: ");
                 int paginas = Integer.parseInt(sc.nextLine());
+                System.out.print("ISBN: ");
+                String isbn = sc.nextLine();
+                System.out.print("Editorial: ");
+                String editorial = sc.nextLine();
+                System.out.print("Edición: ");
+                String edicion = sc.nextLine();
 
-                material = new Book(0, titulo, autor, fechaPub, formato, sede, stock, paginas);
+                material = new Book(0, titulo, autor, language, fechaPub,formato, sede, stock, isbn, editorial, edicion, paginas);
             }
             case 2 -> {
                 System.out.print("Formato (PDF, DOCX, etc.): ");
@@ -336,8 +450,10 @@ public class Main {
                 String university = sc.nextLine();
                 System.out.print("Grado (Bachiller, Magíster, etc.): ");
                 String degree = sc.nextLine();
+                System.out.print("ISSN (si tiene): ");
+                String issn = sc.nextLine();
 
-                material = new Thesis(0, titulo, autor, fechaPub, formato, fileSize, country, university, degree);
+                material = new Thesis(0, titulo, autor, language, fechaPub, formato, fileSize, country, university, degree, issn);
             }
             case 3 -> {
                 System.out.print("Formato (MP3, M4B, etc.): ");
@@ -348,10 +464,12 @@ public class Main {
                 int paginas = Integer.parseInt(sc.nextLine());
                 System.out.print("ISBN (si tiene): ");
                 String isbn = sc.nextLine();
-                System.out.print("Idioma: ");
-                String language = sc.nextLine();
+                System.out.print("Editorial: ");
+                String editorial = sc.nextLine();
+                System.out.print("Edición: ");
+                String edicion = sc.nextLine();
 
-                material = new Ebook(0, titulo, autor, fechaPub, formato, fileSize, paginas, isbn, language);
+                material = new Ebook(0, titulo, autor, language, fechaPub,formato, fileSize, paginas, isbn, editorial, edicion);
             }
             case 4 -> {
                 System.out.print("Formato del archivo (mp4, mkv, etc.): ");
@@ -363,7 +481,7 @@ public class Main {
                 System.out.print("Resolución (1080p, 4K, etc.): ");
                 String resolucion = sc.nextLine();
 
-                material = new Video(0, titulo, autor, fechaPub, formato, fileSize, minutos, resolucion);
+                material = new Video( 0, titulo, autor, language, fechaPub,formato, fileSize, minutos, resolucion);
             }
             case 5 -> {
                 System.out.print("Formato (revista impresa): ");
@@ -376,10 +494,12 @@ public class Main {
                 int volume = Integer.parseInt(sc.nextLine());
                 System.out.print("ISSN: ");
                 String issn = sc.nextLine();
-                System.out.print("Idioma: ");
-                String language = sc.nextLine();
+                System.out.print("Editorial: ");
+                String editorial = sc.nextLine();
+                System.out.print("Edición / número especial: ");
+                String edicion = sc.nextLine();
 
-                material = new Journal(0, titulo, autor, fechaPub, formato, sede, stock, volume, issn, language );
+                material = new Journal(0, titulo, autor, language, fechaPub,formato, sede, stock, issn, editorial, edicion, volume);
             }
             default -> {
                 System.out.println("Tipo no válido.");
@@ -404,50 +524,376 @@ public class Main {
         System.out.println("\nCitación generada:");
         System.out.println(material.getCitacion());
 
+        String isbnIssn = null;
+        String edicion = null;
+        String editorial = null;
+        Integer anioPublicacion = null;
+        String idioma = null;
+
+
+        if (material.getPublicationDate() != null) {
+            anioPublicacion = material.getPublicationDate().getYear();
+        }
+
+        idioma = language;
+
+        // Según el tipo de material, extraemos ISBN / ISSN / editorial / edición
+        if (material instanceof Physical p) {
+            isbnIssn = p.getIsbn();
+            editorial = p.getEditorial();
+            edicion = p.getEdition();
+        }
+
         
+        if (material instanceof Ebook e) {
+            isbnIssn = e.getIsbn();
+            editorial = e.getEditorial();
+            edicion = e.getEdition();
+        }
+
+        if (material instanceof Thesis t) {
+            if (t.getIssn() != null && !t.getIssn().isBlank()) {
+                isbnIssn = t.getIssn();
+            }
+        }
+
+
         String descripcion = "Registrado por bibliotecario";
         int tipoRecursoId = switch (tipo) {
             case 1 -> 1;
             case 2 -> 2;
             case 3 -> 3;
             case 4 -> 4;
-            case 5 -> 7;
+            case 5 -> 5;
             default -> 0;
         };
 
-        int recursoId = recursoDAO.insertarRecurso(titulo, descripcion, tipoRecursoId);
+        int recursoId = recursoDAO.insertarRecurso(titulo,descripcion,tipoRecursoId,isbnIssn, edicion, editorial ,anioPublicacion,idioma);
         if (recursoId <= 0) {
             System.out.println("Error al registrar el recurso en la BD.");
             return;
         }
 
-        if (tipo == 1 || tipo == 5) {
-            System.out.print("Código de copia (ej. LIB-0001): ");
-            String codigo = sc.nextLine();
-            System.out.print("Ubicación física (ej. Estante A1): ");
-            String ubicacion = sc.nextLine();
+        RecursoAutorDAO recursoAutorDAO = new RecursoAutorDAO();
+        boolean okAutor = recursoAutorDAO.insertarAutor(recursoId, material.getAuthor());
 
-            if (copiaDAO.insertarCopiaFisica(recursoId, codigo, ubicacion))
-                System.out.println("✔ Material físico registrado con éxito.");
-            else
-                System.out.println("Error al registrar la copia física.");
-        } else {
-            if (material instanceof Digital d) {
-                boolean ok = recursoDAO.insertarAccesoDigital(
-                        recursoId,
-                        d.getUrlAcceso(),
-                        d.getLicencia(),
-                        d.getUsuariosConcurrentes()
-                );
-                if (ok)
-                    System.out.println("✔ Material digital registrado con éxito.");
-                else
-                    System.out.println("Error al registrar acceso digital.");
-            } else {
-                System.out.println("Advertencia: tipo digital sin datos de acceso.");
+        if (!okAutor) {
+            System.out.println("Advertencia: no se pudo registrar el autor en la tabla RecursoAutor.");
+        }
+
+        if (material instanceof Thesis t) {
+            TesisDAO tesisDAO = new TesisDAO();
+            boolean okTesis = tesisDAO.insertarTesisDetalle(
+                    recursoId,
+                    t.getCountry(),
+                    t.getUniversity(),
+                    t.getDegree()
+            );
+            if (!okTesis) {
+                System.out.println("Advertencia: la tesis se registró en Recurso, "+ "pero no se pudo guardar el detalle (TesisDetalle).");
             }
         }
+
+
+        if (material instanceof Physical p) {
+
+            int stock = p.getStock();
+            for (int i = 1; i <= stock; i++) {
+                System.out.print("Código de copia " + i + " (ej. LIB-0001): ");
+                String codigo = sc.nextLine();
+                System.out.print("Ubicación física de la copia " + i + " (ej. Estante A1): ");
+                String ubicacion = sc.nextLine();
+
+                if (copiaDAO.insertarCopiaFisica(recursoId, codigo, ubicacion)) {
+                    System.out.println("✔ Copia " + i + " registrada.");
+                } else {
+                    System.out.println("Error al registrar la copia " + i + ".");
+                }
+            }
+
+            System.out.println("✔ Material físico registrado con éxito.");
+
+        } else if (material instanceof Digital d) {
+
+            boolean ok = recursoDAO.insertarAccesoDigital(
+                    recursoId,
+                    d.getUrlAcceso(),
+                    d.getLicencia(),
+                    d.getUsuariosConcurrentes()
+            );
+            if (ok) {
+                System.out.println("✔ Material digital registrado con éxito.");
+            } else {
+                System.out.println("Error al registrar acceso digital.");
+            }
+        } else {
+            System.out.println("Advertencia: tipo digital sin datos de acceso.");
+        }
     }
+
+    private static void modificarMaterialOCopia(Scanner sc,RecursoDAO recursoDAO,RecursoCopiaDAO recursoCopiaDAO) {
+        // 1) Mostrar lista de materiales 
+        List<Recurso> lista = recursoDAO.listarTodos();
+
+        if (lista.isEmpty()) {
+            System.out.println("No hay recursos registrados.");
+            return;
+        }
+
+        System.out.println("\n--- MATERIALES REGISTRADOS ---");
+        lista.forEach(r ->
+                System.out.println("ID: " + r.getRecursoId()
+                        + " | Título: " + r.getTitulo()
+                        + " | Tipo: " + r.getTipoRecursoId())
+        );
+
+        System.out.print("Ingrese el ID del recurso a modificar: ");
+        int recursoId = Integer.parseInt(sc.nextLine());
+
+        Recurso recurso = recursoDAO.obtenerPorId(recursoId);
+        if (recurso == null) {
+            System.out.println("No se encontró el recurso.");
+            return;
+        }
+
+        int tipo = recurso.getTipoRecursoId();
+
+        boolean esDigital = (tipo == 2 || tipo == 3 || tipo == 4);
+
+        System.out.println("\nRecurso seleccionado: " + recurso.getTitulo()
+                + " | Tipo: " + recurso.getTipoRecursoId());
+
+        System.out.println("¿Qué desea modificar?");
+        System.out.println("1. Datos del material");
+        System.out.println("2. Copia física (estante / código / estado)");
+        if (esDigital) {
+            System.out.println("3. Acceso digital (URL / licencia / usuarios)");
+        }
+        System.out.println("0. Cancelar");
+        System.out.print("Opción: ");
+        int op = Integer.parseInt(sc.nextLine());
+
+        switch (op) {
+            case 1 -> modificarDatosMaterial(sc, recursoDAO, recurso);
+            case 2 -> modificarCopiaFisica(sc, recursoCopiaDAO, recursoId); 
+            case 3 -> {
+                if (!esDigital) {
+                    System.out.println("Opción no válida para recursos físicos.");
+                } else {
+                    modificarAccesoDigital(sc, recursoDAO, recurso.getRecursoId());
+                }
+            }
+            case 0 -> { return; }
+            default -> System.out.println("Opción no válida.");
+        }
+    }
+
+    private static void modificarDatosMaterial(Scanner sc,RecursoDAO recursoDAO,Recurso recurso) {
+
+        System.out.println("\n--- MODIFICAR DATOS DEL MATERIAL ---");
+        System.out.println("(Deje vacío y presione Enter para mantener el valor actual)");
+
+        System.out.println("Título actual: " + recurso.getTitulo());
+        System.out.print("Nuevo título: ");
+        String nuevoTitulo = sc.nextLine();
+        if (!nuevoTitulo.isBlank()) {
+            recurso.setTitulo(nuevoTitulo);
+        }
+
+        System.out.println("Descripción actual: " + recurso.getDescripcion());
+        System.out.print("Nueva descripción: ");
+        String nuevaDesc = sc.nextLine();
+        if (!nuevaDesc.isBlank()) {
+            recurso.setDescripcion(nuevaDesc);
+        }
+
+        System.out.println("ISBN/ISSN actual: " + recurso.getIsbn());
+        System.out.print("Nuevo ISBN/ISSN: ");
+        String nuevoIsbn = sc.nextLine();
+        if (!nuevoIsbn.isBlank()) {
+            recurso.setIsbn(nuevoIsbn);
+        }
+
+        System.out.println("Edición actual: " + recurso.getEdicion());
+        System.out.print("Nueva edición: ");
+        String nuevaEdicion = sc.nextLine();
+        if (!nuevaEdicion.isBlank()) {
+            recurso.setEdicion(nuevaEdicion);
+        }
+
+        System.out.println("Editorial actual: " + recurso.getEditorial());
+        System.out.print("Nueva editorial: ");
+        String nuevaEditorial = sc.nextLine();
+        if (!nuevaEditorial.isBlank()) {
+            recurso.setEditorial(nuevaEditorial);
+        }
+
+        System.out.println("Año publicación actual: " + recurso.getAnoPublicacion());
+        System.out.print("Nuevo año de publicación: ");
+        String nuevoAnioStr = sc.nextLine();
+        if (!nuevoAnioStr.isBlank()) {
+            try {
+                int nuevoAnio = Integer.parseInt(nuevoAnioStr);
+                recurso.setAnoPublicacion(nuevoAnio);
+            } catch (NumberFormatException e) {
+                System.out.println("Año inválido. Se mantiene el actual.");
+            }
+        }
+
+        System.out.println("Idioma actual: " + recurso.getIdioma());
+        System.out.print("Nuevo idioma: ");
+        String nuevoIdioma = sc.nextLine();
+        if (!nuevoIdioma.isBlank()) {
+            recurso.setIdioma(nuevoIdioma);
+        }
+
+        boolean ok = recursoDAO.actualizarDatosBasicos(recurso);
+        if (ok) {
+            System.out.println("✔ Material actualizado correctamente.");
+        } else {
+            System.out.println("✖ No se pudo actualizar el material.");
+        }
+    }
+
+    private static void modificarCopiaFisica(Scanner sc,RecursoCopiaDAO copiaDAO,int recursoId) {
+
+        System.out.println("\n--- MODIFICAR COPIA FÍSICA ---");
+
+        // 1) Listar copias del recurso
+        List<RecursoCopia> copias = copiaDAO.listarCopiasPorRecurso(recursoId);
+
+        if (copias.isEmpty()) {
+            System.out.println("Este recurso no tiene copias físicas registradas.");
+            return;
+        }
+
+
+        System.out.println("Copias del recurso:");
+        for (RecursoCopia c : copias) {
+            System.out.println(
+                "CopiaID: " + c.getCopiaId() +
+                " | Código: " + c.getCodigoCopia() +
+                " | Ubicación: " + c.getUbicacion() +
+                " | EstadoID: " + c.getEstadoId()
+            );
+        }
+
+        // 2) Elegir copia
+        System.out.print("Ingrese el ID de la copia a modificar: ");
+        int copiaId = Integer.parseInt(sc.nextLine());
+
+        RecursoCopia copiaSeleccionada = null;
+        for (RecursoCopia c : copias) {
+            if (c.getCopiaId() == copiaId) {
+                copiaSeleccionada = c;
+                break;
+            }
+        }
+
+        if (copiaSeleccionada == null) {
+            System.out.println("No se encontró la copia con ese ID.");
+            return;
+        }
+
+        // Verificar estado de la copia
+        int estado = copiaSeleccionada.getEstadoId();   
+        if (estado == 2 || estado == 3) {               
+            System.out.println("La copia está prestada o reservada.");
+            System.out.println("No se permite modificar código ni ubicación.");
+            return;
+        }
+
+        
+        // 3) Pedir nuevos datos 
+        System.out.print("Nuevo código de copia (deje vacío para mantener): ");
+        String nuevoCodigo = sc.nextLine();
+
+        System.out.print("Nueva ubicación (deje vacío para mantener): ");
+        String nuevaUbicacion = sc.nextLine();
+
+        // 4) Validar que haya al menos un cambio
+        if (nuevoCodigo.isBlank() && nuevaUbicacion.isBlank()) {
+            System.out.println("No se ingresaron cambios. Operación cancelada.");
+            return;
+        }
+
+        // Para los que dejó en blanco, necesitamos leer los valores actuales
+        
+        if (nuevoCodigo.isBlank() || nuevaUbicacion.isBlank()) {
+            RecursoCopia copiaActual = null;
+            for (RecursoCopia c : copias) {
+                if (c.getCopiaId() == copiaId) {
+                    copiaActual = c;
+                    break;
+                }
+            }
+            if (copiaActual == null) {
+                System.out.println("No se encontró la copia seleccionada.");
+                return;
+            }
+
+            if (nuevoCodigo.isBlank()) {
+                nuevoCodigo = copiaActual.getCodigoCopia();
+            }
+            if (nuevaUbicacion.isBlank()) {
+                nuevaUbicacion = copiaActual.getUbicacion();
+            }
+        }
+
+        boolean ok = copiaDAO.actualizarCodigoUbicacion(copiaId, nuevoCodigo, nuevaUbicacion);
+        if (ok) {
+            System.out.println("✔ Copia actualizada correctamente.");
+        } else {
+            System.out.println("✖ No se pudo actualizar la copia.");
+        }
+    }
+
+
+    private static void modificarAccesoDigital(Scanner sc,RecursoDAO recursoDAO,int recursoId) {
+
+        AccesoDigital acceso = recursoDAO.obtenerAccesoDigitalPorRecurso(recursoId);
+
+        if (acceso == null) {
+            System.out.println("Este recurso no tiene acceso digital configurado.");
+            return;
+        }
+
+        System.out.println("\n--- ACCESO DIGITAL ACTUAL ---");
+        System.out.println("URL: " + acceso.getUrlAcceso());
+        System.out.println("Licencia: " + acceso.getLicencia());
+        System.out.println("Usuarios concurrentes: " + acceso.getUsuariosConcurrentes());
+
+        System.out.print("Nueva URL (enter para mantener): ");
+        String nuevaUrl = sc.nextLine().trim();
+        if (!nuevaUrl.isEmpty()) {
+            acceso.setUrlAcceso(nuevaUrl);
+        }
+
+        System.out.print("Nueva licencia (enter para mantener): ");
+        String nuevaLicencia = sc.nextLine().trim();
+        if (!nuevaLicencia.isEmpty()) {
+            acceso.setLicencia(nuevaLicencia);
+        }
+
+        System.out.print("Nuevos usuarios concurrentes (enter para mantener): ");
+        String usuariosTxt = sc.nextLine().trim();
+        if (!usuariosTxt.isEmpty()) {
+            try {
+                acceso.setUsuariosConcurrentes(Integer.parseInt(usuariosTxt));
+            } catch (NumberFormatException e) {
+                System.out.println("Número inválido. Se mantienen los usuarios actuales.");
+            }
+        }
+
+        if (recursoDAO.actualizarAccesoDigital(acceso)) {
+            System.out.println("✔ Acceso digital actualizado correctamente.");
+        } else {
+            System.out.println("✘ No se pudo actualizar el acceso digital.");
+        }
+    }
+
+
+
 
     // ==========================================================
     //  FUNCIONES AUXILIARES (PRÉSTAMOS, SALAS, SOLICITUDES)
@@ -466,12 +912,9 @@ public class Main {
         System.out.println("\nSeleccione el tipo de material:");
         System.out.println("1. Libro");
         System.out.println("2. Tesis");
-        System.out.println("3. Audiolibro");
+        System.out.println("3. LibroVirtual");
         System.out.println("4. Multimedia");
-        System.out.println("5. Tablet");
-        System.out.println("6. PC");
-        System.out.println("7. Revista");
-        System.out.println("8. DVD");
+        System.out.println("5. Revista");
         System.out.print("Opción: ");
 
         int tipo = Integer.parseInt(sc.nextLine());
@@ -479,12 +922,9 @@ public class Main {
         String tipoStr = switch (tipo) {
             case 1 -> "Libro";
             case 2 -> "Tesis";
-            case 3 -> "Audiolibro";
+            case 3 -> "Libro virtual";
             case 4 -> "Multimedia";
-            case 5 -> "Tablet";
-            case 6 -> "PC";
-            case 7 -> "Revista";
-            case 8 -> "DVD";
+            case 5 -> "Revista";
             default -> "";
         };
 
@@ -550,8 +990,7 @@ public class Main {
 
         System.out.print("ID de solicitud a procesar: ");
         int id = Integer.parseInt(sc.nextLine());
-        System.out.print("Nuevo estado (Aprobado / Rechazado): ");
-        String estado = sc.nextLine().trim();
+
 
         Solicitud solicitud = solDAO.obtenerPorId(id);
         if (solicitud == null) {
@@ -559,29 +998,52 @@ public class Main {
             return;
         }
 
+        if (!solicitud.getEstado().equalsIgnoreCase("Pendiente")) {
+            System.out.println("❌ La solicitud ya fue procesada anteriormente (estado actual: "
+                    + solicitud.getEstado() + "). No puede modificarse.");
+            return;
+        }
+
+        System.out.print("Nuevo estado (Aprobado / Rechazado): ");
+        String estadoIngresado = sc.nextLine().trim();
+
+        String estado;
+        if (estadoIngresado.equalsIgnoreCase("Aprobado")) {
+            estado = "aprobado";      
+        } else if (estadoIngresado.equalsIgnoreCase("Rechazado")) {
+            estado = "rechazado";
+        } else {
+            System.out.println("❌ Estado inválido. Debe ser 'Aprobado' o 'Rechazado'.");
+            return;
+        }
+
+        
         System.out.println("Solicitud seleccionada: " + solicitud);
 
         if (estado.equalsIgnoreCase("Aprobado")) {
             String tipo = solicitud.getTipoMaterial();
 
             boolean esFisico = tipo.equalsIgnoreCase("Libro")
-                            || tipo.equalsIgnoreCase("Revista")
-                            || tipo.equalsIgnoreCase("Tablet")
-                            || tipo.equalsIgnoreCase("PC")
-                            || tipo.equalsIgnoreCase("DVD");
+                            || tipo.equalsIgnoreCase("Revista");
+
+            PrestamoService prestamoService = new PrestamoService();
 
             if (esFisico) {
-                
-                PrestamoService prestamoService = new PrestamoService();
 
                 boolean okPrestamo = prestamoService.prestarRecurso(solicitud);
 
                 if (!okPrestamo) {
-                    System.out.println("No se pudo generar el préstamo. La solicitud seguirá como Pendiente.");
+                    System.out.println("No se pudo generar el préstamo físico. La solicitud seguirá como Pendiente.");
                     return;
                 }
+
             } else {
-                System.out.println("Material digital: se aprueba la solicitud sin generar préstamo físico.");
+                boolean okDig = prestamoService.prestarRecursoDigital(solicitud);
+
+                if (!okDig) {
+                    System.out.println("No se pudo generar el préstamo digital. La solicitud seguirá como Pendiente.");
+                    return;
+                }
             }
         }
 
@@ -598,22 +1060,49 @@ public class Main {
         PrestamoService prestamoService = new PrestamoService();
 
         System.out.println("=== Registrar devolución de préstamo ===");
+
+        List<Prestamo> activos = prestamoDAO.listarPrestamosActivos();
+        if (activos.isEmpty()) {
+            System.out.println("No hay préstamos activos.");
+            return;
+        }
+
+        System.out.println("--- PRÉSTAMOS FÍSICOS ACTIVOS ---");
+        for (Prestamo p : activos) {
+            System.out.println(
+                    "ID préstamo: " + p.getPrestamoId() +
+                    " | CopiaID: " + p.getCopiaId() +
+                    " | UsuarioID: " + p.getPersonaId() +
+                    " | Vence: " + p.getFechaVencimiento()
+            );
+        }
+
         System.out.print("Ingrese ID del préstamo: ");
         int prestamoId = Integer.parseInt(sc.nextLine());
 
-        Prestamo prestamo = prestamoDAO.obtenerPorId(prestamoId); // AJUSTA al nombre real
+        Prestamo prestamo = prestamoDAO.obtenerPorId(prestamoId); 
         if (prestamo == null) {
             System.out.println("No se encontró el préstamo.");
             return;
         }
 
+        if (prestamo.getFechaDevolucion() != null) {
+            System.out.println("Este préstamo ya fue devuelto.");
+            return;
+        }
+
         System.out.println("Seleccione estado de la devolución:");
         System.out.println("1) Devuelto normal");
-        System.out.println("2) Devuelto con daño (solo físicos)");
-        System.out.println("3) No devuelto (pérdida, solo físicos)");
-        System.out.println("4) Solo registrar (digital o físico), el sistema calculará retraso");
+        System.out.println("2) Devuelto con daño");
+        System.out.println("3) No devuelto");
+        System.out.println("4) Devuelto con retraso");
+        System.out.print("Opción: ");
 
         int opcion = Integer.parseInt(sc.nextLine());
+        if (opcion < 1 || opcion > 4) {
+            System.out.println("Opción no válida.");
+            return;
+        }
 
         // monto para daño o pérdida
         BigDecimal montoExtra = BigDecimal.ZERO;
@@ -629,15 +1118,16 @@ public class Main {
         );
 
         if (ok) {
-            System.out.println("✔ Devolución registrada correctamente.");
+            System.out.println(" Devolución registrada correctamente.");
         } else {
-            System.out.println("❌ Error registrando la devolución.");
+            System.out.println(" Error registrando la devolución.");
         }
     }
 
     private static void registrarPenalidadPosterior(Scanner sc) {
         PrestamoDAO prestamoDAO = new PrestamoDAO();
         PrestamoService prestamoService = new PrestamoService();
+        PenalidadDAO penalidadDAO = new PenalidadDAO();
 
         System.out.println("=== Registrar penalidad posterior ===");
         System.out.print("Ingrese ID del préstamo: ");
@@ -654,10 +1144,20 @@ public class Main {
             return;
         }
 
+        if (penalidadDAO.existePenalidadPorPrestamo(prestamoId)) {
+            System.out.println("Ya existe una penalidad asociada a este préstamo.");
+            return;
+        }
+
         System.out.println("Tipo de penalidad:");
         System.out.println("2) Daño");
         System.out.println("3) Pérdida");
         int tipo = Integer.parseInt(sc.nextLine());
+
+        if (tipo != 2 && tipo != 3) {
+            System.out.println("Tipo de penalidad no válido. Solo 2 (Daño) o 3 (Pérdida).");
+            return;
+        }
 
         System.out.print("Monto de la penalidad: ");
         BigDecimal monto = new BigDecimal(sc.nextLine());
@@ -670,9 +1170,9 @@ public class Main {
         );
 
         if (ok) {
-            System.out.println("✔ Penalidad registrada.");
+            System.out.println(" Penalidad registrada.");
         } else {
-            System.out.println("❌ No se pudo registrar la penalidad.");
+            System.out.println(" No se pudo registrar la penalidad.");
         }
     }
 
@@ -700,9 +1200,9 @@ public class Main {
         int penalidadId = Integer.parseInt(sc.nextLine());
 
         if (penalidadDAO.marcarPenalidadPagada(penalidadId)) {
-            System.out.println("✔ Penalidad marcada como pagada.");
+            System.out.println(" Penalidad marcada como pagada.");
         } else {
-            System.out.println("❌ No se pudo actualizar la penalidad.");
+            System.out.println(" No se pudo actualizar la penalidad.");
         }
     }
 
