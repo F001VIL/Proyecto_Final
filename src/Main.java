@@ -1,7 +1,7 @@
 import dao.*;
 import modelo.Usuario;
 import modelo.Video;
-import servicio.PrestamoService;
+import servicio.*;
 import modelo.AccesoDigital;
 import modelo.Book;
 import modelo.Digital;
@@ -100,7 +100,14 @@ public class Main {
             System.out.println("2. Listar usuarios");
             System.out.println("3. Cambiar contraseña");
             System.out.println("4. Eliminar usuario");
-            System.out.println("5. Salir");
+            System.out.println("5. Gestionar monitores");
+            System.out.println("6. Gestionar teclados");
+            System.out.println("7. Gestionar mouses");
+            System.out.println("8. Gestionar tarjetas gráficas");
+            System.out.println("9. Gestionar computadoras de escritorio");
+            System.out.println("10. Gestionar laptops");
+            System.out.println("11. Gestionar tablets");
+            System.out.println("0. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -110,7 +117,14 @@ public class Main {
                 case 2 -> listarUsuarios(dao);
                 case 3 -> cambiarPasswordUsuario(sc, dao);
                 case 4 -> eliminarUsuario(sc, dao);
-                case 5 -> { return; }
+                case 5 -> new MonitorManager().run();
+                case 6 -> new KeyboardManager().run();
+                case 7 -> new MouseManager().run();
+                case 8 -> new GraphicCardService().run();
+                case 9 -> new DesktopPcService().run();
+                case 10 -> new LaptopService().run();
+                case 11 -> new TabletService().run();
+                case 0 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }

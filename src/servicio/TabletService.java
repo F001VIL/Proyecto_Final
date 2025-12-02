@@ -14,11 +14,7 @@ public class TabletService {
     private final TabletDAO dao = new TabletDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new TabletService().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Tablets ---");
             System.out.println("1. Crear tablet");

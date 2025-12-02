@@ -14,11 +14,7 @@ public class MonitorManager {
     private final MonitorDAO dao = new MonitorDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new MonitorManager().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Monitores ---");
             System.out.println("1. Crear monitor");

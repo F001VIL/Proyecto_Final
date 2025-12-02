@@ -14,11 +14,7 @@ public class GraphicCardService {
     private final GraphicCardDAO dao = new GraphicCardDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new GraphicCardService().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Tarjetas Gráficas ---");
             System.out.println("1. Crear tarjeta gráfica");

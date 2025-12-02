@@ -14,11 +14,7 @@ public class DesktopPcService {
     private final DesktopPcDAO dao = new DesktopPcDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new DesktopPcService().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Desktop PC ---");
             System.out.println("1. Crear Desktop PC");
