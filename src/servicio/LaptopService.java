@@ -14,11 +14,7 @@ public class LaptopService {
     private final LaptopDAO dao = new LaptopDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new LaptopService().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Laptops ---");
             System.out.println("1. Crear laptop");

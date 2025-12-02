@@ -14,11 +14,7 @@ public class KeyboardManager {
     private final KeyboardDAO dao = new KeyboardDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new KeyboardManager().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Teclados ---");
             System.out.println("1. Crear teclado");

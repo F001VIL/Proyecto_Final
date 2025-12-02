@@ -14,11 +14,7 @@ public class MouseManager {
     private final MouseDAO dao = new MouseDAO();
     private final Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        new MouseManager().run();
-    }
-
-    private void run() {
+    public void run() {
         while (true) {
             System.out.println("\n--- Gestión de Mouses ---");
             System.out.println("1. Crear mouse");
