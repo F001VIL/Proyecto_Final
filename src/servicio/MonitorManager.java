@@ -35,7 +35,6 @@ public class MonitorManager {
                     case "5" -> eliminarMonitor();
                     case "6" -> {
                         System.out.println("Saliendo...");
-                        scanner.close();
                         return;
                     }
                     default -> System.out.println("Opción no válida. Intente de nuevo.");

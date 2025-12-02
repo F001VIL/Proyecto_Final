@@ -35,7 +35,6 @@ public class DesktopPcService {
                     case "5" -> deleteDesktopPc();
                     case "6" -> {
                         System.out.println("Saliendo...");
-                        scanner.close();
                         return;
                     }
                     default -> System.out.println("Opción no válida. Intente de nuevo.");
