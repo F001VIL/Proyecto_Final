@@ -4,6 +4,7 @@ import modelo.Usuario;
 import servicio.PasswordUtil;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -161,7 +162,26 @@ public class UsuarioDAO {
 
 
     public Usuario obtenerPorId(int usuarioId) {
-    String sql = "SELECT * FROM Usuario WHERE UsuarioID = ?";
+    String sql = """
+        SELECT 
+            u.UsuarioID,
+            u.PersonaID,
+            u.Username,
+            u.PasswordHash,
+            u.Salt,
+            u.Rol,
+            u.Activo,
+            u.PrimerInicio,
+
+            p.CodigoUniversitario,
+            p.Nombre,
+            p.Apellido,
+            p.FechaNacimiento,
+            p.Email
+        FROM Usuario u
+        JOIN Persona p ON u.PersonaID = p.PersonaID
+        WHERE u.UsuarioID = ?
+    """;
 
     try (Connection con = ConexionBD.getConnection();
          PreparedStatement ps = con.prepareStatement(sql)) {
@@ -185,6 +205,17 @@ public class UsuarioDAO {
             );
             u.setPrimerInicio(rs.getBoolean("PrimerInicio"));
 
+            u.setNombre(rs.getString("Nombre"));
+            u.setApellido(rs.getString("Apellido"));
+            u.setEmail(rs.getString("Email"));
+
+            Date fechaSql = rs.getDate("FechaNacimiento");
+            if (fechaSql != null) {
+                u.setFechaNacimiento(fechaSql.toLocalDate());
+            }
+
+            u.setCodigoUniversitario(rs.getString("CodigoUniversitario"));
+
             return u;
         }
 
@@ -193,5 +224,90 @@ public class UsuarioDAO {
     }
 
     return null;
+    }
+
+
+    public boolean actualizarUsuarioConPersona(
+            int usuarioId,
+            String nuevoUsername,
+            String nuevoRol,
+            boolean nuevoActivo,
+            int personaId,
+            String nuevoNombre,
+            String nuevoApellido,
+            LocalDate nuevaFechaNacimiento,
+            String nuevoEmail) {
+
+        String sqlPersona = """
+            UPDATE Persona
+            SET Nombre = ?,
+                Apellido = ?,
+                FechaNacimiento = ?,
+                Email = ?
+            WHERE PersonaID = (
+                SELECT PersonaID
+                FROM Usuario
+                WHERE UsuarioID = ?
+            )
+            """;
+
+        String sqlUsuario = """
+            UPDATE Usuario
+            SET Username = ?,
+                Rol = ?,
+                Activo = ?
+            WHERE UsuarioID = ?
+            """;
+
+        try (Connection con = ConexionBD.getConnection()) {
+            con.setAutoCommit(false);
+
+            
+            try (PreparedStatement psPersona = con.prepareStatement(sqlPersona)) {
+
+                psPersona.setString(1, nuevoNombre);
+                psPersona.setString(2, nuevoApellido);
+
+                if (nuevaFechaNacimiento != null) {
+                    psPersona.setDate(3, java.sql.Date.valueOf(nuevaFechaNacimiento));
+                } else {
+                    psPersona.setNull(3, java.sql.Types.DATE);
+                }
+
+                psPersona.setString(4, nuevoEmail);
+                psPersona.setInt(5, usuarioId);  
+
+                int filasPersona = psPersona.executeUpdate();
+
+                
+                try (PreparedStatement psUsuario = con.prepareStatement(sqlUsuario)) {
+                    psUsuario.setString(1, nuevoUsername);
+                    psUsuario.setString(2, nuevoRol);
+                    psUsuario.setBoolean(3, nuevoActivo);
+                    psUsuario.setInt(4, usuarioId);
+
+                    int filasUsuario = psUsuario.executeUpdate();
+
+                    if (filasPersona > 0 && filasUsuario > 0) {
+                        con.commit();
+                        return true;
+                    } else {
+                        con.rollback();
+                        return false;
+                    }
+                }
+
+            } catch (SQLException e) {
+                con.rollback();
+                System.err.println("Error actualizando usuario/persona: " + e.getMessage());
+                return false;
+            } finally {
+                con.setAutoCommit(true);
+            }
+
+        } catch (SQLException ex) {
+            System.err.println("Error obteniendo conexión: " + ex.getMessage());
+            return false;
+        }
     }
 }

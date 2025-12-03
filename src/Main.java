@@ -24,6 +24,7 @@ import java.util.Scanner;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.text.ParseException;
 
 public class Main {
@@ -99,14 +100,15 @@ public class Main {
             System.out.println("1. Crear usuario");
             System.out.println("2. Listar usuarios");
             System.out.println("3. Cambiar contraseña");
-            System.out.println("4. Eliminar usuario");
-            System.out.println("5. Gestionar monitores");
-            System.out.println("6. Gestionar teclados");
-            System.out.println("7. Gestionar mouses");
-            System.out.println("8. Gestionar tarjetas gráficas");
-            System.out.println("9. Gestionar computadoras de escritorio");
-            System.out.println("10. Gestionar laptops");
-            System.out.println("11. Gestionar tablets");
+            System.out.println("4. Actualizar usuario");
+            System.out.println("5. Eliminar usuario");
+            System.out.println("6. Gestionar monitores");
+            System.out.println("7. Gestionar teclados");
+            System.out.println("8. Gestionar mouses");
+            System.out.println("9. Gestionar tarjetas gráficas");
+            System.out.println("10. Gestionar computadoras de escritorio");
+            System.out.println("11. Gestionar laptops");
+            System.out.println("12. Gestionar tablets");
             System.out.println("0. Salir");
             System.out.print("Opción: ");
 
@@ -116,14 +118,15 @@ public class Main {
                 case 1 -> crearUsuario(sc, dao);
                 case 2 -> listarUsuarios(dao);
                 case 3 -> cambiarPasswordUsuario(sc, dao);
-                case 4 -> eliminarUsuario(sc, dao);
-                case 5 -> new MonitorManager().run();
-                case 6 -> new KeyboardManager().run();
-                case 7 -> new MouseManager().run();
-                case 8 -> new GraphicCardService().run();
-                case 9 -> new DesktopPcService().run();
-                case 10 -> new LaptopService().run();
-                case 11 -> new TabletService().run();
+                case 4 -> actualizarUsuario(sc, dao);
+                case 5 -> eliminarUsuario(sc, dao);
+                case 6 -> new MonitorManager().run();
+                case 7 -> new KeyboardManager().run();
+                case 8 -> new MouseManager().run();
+                case 9 -> new GraphicCardService().run();
+                case 10 -> new DesktopPcService().run();
+                case 11 -> new LaptopService().run();
+                case 12 -> new TabletService().run();
                 case 0 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
@@ -175,6 +178,105 @@ public class Main {
             System.out.println("✔ Contraseña cambiada.");
         else
             System.out.println(" No se pudo cambiar.");
+    }
+
+    private static void actualizarUsuario(Scanner sc, UsuarioDAO usuarioDAO) {
+        System.out.println("\n--- ACTUALIZAR USUARIO ---");
+
+        
+        listarUsuarios(usuarioDAO);  
+
+        System.out.print("Ingrese el ID del usuario a modificar: ");
+        int usuarioId = Integer.parseInt(sc.nextLine());
+
+        
+        Usuario actual = usuarioDAO.obtenerPorId(usuarioId);
+        if (actual == null) {
+            System.out.println("No se encontró usuario con ese ID.");
+            return;
+        }
+
+        System.out.println("\nDeje vacío y presione Enter para NO cambiar ese campo.");
+
+        
+        System.out.println("\n--- Datos de cuenta ---");
+        System.out.println("Username actual: " + actual.getUsername());
+        System.out.print("Nuevo username: ");
+        String nuevoUsername = sc.nextLine().trim();
+        if (nuevoUsername.isEmpty()) {
+            nuevoUsername = actual.getUsername();
+        }
+
+        System.out.println("Rol actual: " + actual.getRol());
+        System.out.print("Nuevo rol (Administrador / Alumno / Bibliotecario): ");
+        String nuevoRol = sc.nextLine().trim();
+        if (nuevoRol.isEmpty()) {
+            nuevoRol = actual.getRol();
+        }
+
+        System.out.println("Activo actual (1 = activo, 0 = inactivo): " + (actual.isActivo() ? 1 : 0));
+        System.out.print("Nuevo estado activo (1/0, vacío = mantener): ");
+        String activoStr = sc.nextLine().trim();
+        boolean nuevoActivo;
+        if (activoStr.isEmpty()) {
+            nuevoActivo = actual.isActivo();
+        } else {
+            nuevoActivo = activoStr.equals("1");
+        }
+
+
+        System.out.println("\n--- Datos personales ---");
+        System.out.println("Nombre actual: " + actual.getNombre());
+        System.out.print("Nuevo nombre: ");
+        String nuevoNombre = sc.nextLine().trim();
+        if (nuevoNombre.isEmpty()) {
+            nuevoNombre = actual.getNombre();
+        }
+
+        System.out.println("Apellido actual: " + actual.getApellido());
+        System.out.print("Nuevo apellido: ");
+        String nuevoApellido = sc.nextLine().trim();
+        if (nuevoApellido.isEmpty()) {
+            nuevoApellido = actual.getApellido();
+        }
+
+        System.out.println("Fecha de nacimiento actual: " + (actual.getFechaNacimiento() != null ? actual.getFechaNacimiento() : "NULL"));
+        System.out.print("Nueva fecha de nacimiento (yyyy-MM-dd): ");
+        String fechaStr = sc.nextLine().trim();
+        LocalDate nuevaFechaNac = actual.getFechaNacimiento();
+        if (!fechaStr.isEmpty()) {
+            try {
+                nuevaFechaNac = LocalDate.parse(fechaStr);
+            } catch (Exception e) {
+                System.out.println("Formato de fecha inválido. Se dejará NULL.");
+            }
+        }
+
+        System.out.println("Email actual: " + actual.getEmail());
+        System.out.print("Nuevo email: ");
+        String nuevoEmail = sc.nextLine().trim();
+        if (nuevoEmail.isEmpty()) {
+            nuevoEmail = actual.getEmail();
+        }
+
+        // ====== Guardar cambios ======
+        boolean ok = usuarioDAO.actualizarUsuarioConPersona(
+                usuarioId,
+                nuevoUsername,
+                nuevoRol,
+                nuevoActivo,
+                actual.getPersonaId(),
+                nuevoNombre,
+                nuevoApellido,
+                nuevaFechaNac,
+                nuevoEmail
+        );
+
+        if (ok) {
+            System.out.println("✔ Usuario actualizado correctamente.");
+        } else {
+            System.out.println("✖ No se pudo actualizar el usuario.");
+        }
     }
 
     private static void eliminarUsuario(Scanner sc, UsuarioDAO dao) {
@@ -295,6 +397,7 @@ public class Main {
         ReservaSalaDAO salaDAO = new ReservaSalaDAO();
         RecursoDAO recursoDAO = new RecursoDAO();
         RecursoCopiaDAO recursoCopiaDAO = new RecursoCopiaDAO();
+        
 
         while (true) {
             System.out.println("\n--- MENÚ BIBLIOTECARIO ---");
@@ -305,12 +408,15 @@ public class Main {
             System.out.println("5. Procesar solicitudes (aprobar / rechazar)");
             System.out.println("6. Registrar devolución de préstamo");
             System.out.println("7. Registrar penalidad posterior");
-            System.out.println("8. Ver penalidades y registrar pago");
-            System.out.println("9. Registrar sala");
-            System.out.println("10. Ver salas");
-            System.out.println("11. Eliminar recurso");
-            System.out.println("12. Modificar material / copia");
-            System.out.println("13. Salir");
+            System.out.println("8. Modificar monto de penalidad");
+            System.out.println("9. Ver penalidades y registrar pago");
+            System.out.println("10. Registrar sala");
+            System.out.println("11. Ver salas");
+            System.out.println("12. Eliminar recurso");
+            System.out.println("13. Modificar material / copia");
+            System.out.println("14. Ver historial de préstamos");
+            System.out.println("15. Ver historial de penalidades");
+            System.out.println("16. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -323,12 +429,15 @@ public class Main {
                 case 5 -> procesarSolicitudes(sc, solDAO);
                 case 6 -> registrarDevolucion(sc);
                 case 7 -> registrarPenalidadPosterior(sc);
-                case 8 -> gestionarPenalidades(sc);
-                case 9 -> registrarSala(sc, new SalaDAO());
-                case 10 -> listarSalas(new SalaDAO());
-                case 11 -> eliminarRecurso(sc, recursoDAO, recursoCopiaDAO);
-                case 12 -> modificarMaterialOCopia(sc, recursoDAO, recursoCopiaDAO);
-                case 13 -> { return; }
+                case 8 -> modificarMontoPenalidad(sc);
+                case 9 -> gestionarPenalidades(sc);
+                case 10 -> registrarSala(sc, new SalaDAO());
+                case 11 -> listarSalas(new SalaDAO());
+                case 12 -> eliminarRecurso(sc, recursoDAO, recursoCopiaDAO);
+                case 13 -> modificarMaterialOCopia(sc, recursoDAO, recursoCopiaDAO);
+                case 14 -> verHistorialPrestamos(new PrestamoDAO());
+                case 15 -> verHistorialPenalidades(); 
+                case 16 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -949,8 +1058,28 @@ public class Main {
             return;
         }
 
+        boolean esDigital = tipoStr.equalsIgnoreCase("Tesis")
+            || tipoStr.equalsIgnoreCase("Libro virtual")
+            || tipoStr.equalsIgnoreCase("Multimedia");
+
         System.out.println("\nMateriales disponibles:");
-        disponibles.forEach(System.out::println);
+        
+
+        for (Recurso r : disponibles) {
+            if (esDigital) {
+                System.out.println(
+                        "ID: " + r.getRecursoId() +
+                        " | Título: " + r.getTitulo() +
+                        " | Acceso digital"
+                );
+            } else {
+                System.out.println(
+                        "ID: " + r.getRecursoId() +
+                        " | Título: " + r.getTitulo() +
+                        " | Copias disponibles: " + r.getStock()
+                );
+            }
+        }
 
         System.out.print("ID de copia a solicitar: ");
         int copiaID = Integer.parseInt(sc.nextLine());
@@ -959,6 +1088,96 @@ public class Main {
             System.out.println("✔ Solicitud registrada.");
         } else {
             System.out.println("Error creando solicitud.");
+        }
+    }
+
+    private static void modificarMontoPenalidad(Scanner sc) {
+        PenalidadDAO penalidadDAO = new PenalidadDAO();
+        List<Penalidad> lista = penalidadDAO.listarHistorial();
+
+        if (lista.isEmpty()) {
+            System.out.println("No hay penalidades registradas.");
+            return;
+        }
+
+        System.out.println("\n--- PENALIDADES REGISTRADAS ---");
+        for (Penalidad p : lista) {
+            System.out.println(
+                "ID: " + p.getPenalidadId() +
+                " | PrestamoID: " + p.getPrestamoId() +
+                " | PersonaID: " + p.getPersonaId() +
+                " | Monto actual: " + p.getMonto() +
+                " | Pagada: " + (p.isPagada() ? "Sí" : "No")
+            );
+        }
+
+        System.out.print("Ingrese el ID de la penalidad a modificar: ");
+        int penalidadId = Integer.parseInt(sc.nextLine());
+
+        System.out.print("Nuevo monto: ");
+        BigDecimal nuevoMonto = new BigDecimal(sc.nextLine());
+
+        boolean ok = penalidadDAO.actualizarMonto(penalidadId, nuevoMonto);
+
+        if (ok) {
+            System.out.println("✓ Monto de penalidad actualizado correctamente.");
+        } else {
+            System.out.println("No se pudo actualizar el monto.");
+        }
+    }
+
+
+    private static void verHistorialPrestamos(PrestamoDAO prestamoDAO) {
+        System.out.println("\n--- HISTORIAL DE PRÉSTAMOS ---");
+        List<Prestamo> lista = prestamoDAO.listarTodos();
+
+        if (lista.isEmpty()) {
+            System.out.println("No hay préstamos registrados.");
+            return;
+        }
+
+        for (Prestamo p : lista) {
+            // Calculamos el estado “al vuelo” SIN tener atributo
+            String estado;
+            if (p.getFechaDevolucion() == null) {
+                estado = "Activo";
+            } else {
+                estado = "Devuelto";
+            }
+
+            System.out.println(
+                "ID: " + p.getPrestamoId() +
+                " | CopiaID: " + p.getCopiaId() +
+                " | PersonaID: " + p.getPersonaId() +
+                " | Fecha préstamo: " + p.getFechaPrestamo() +
+                " | Vence: " + p.getFechaVencimiento() +
+                " | Devuelto: " + p.getFechaDevolucion() +
+                " | Estado: " + estado
+            );
+        }
+    }
+
+    private static void verHistorialPenalidades() {
+        PenalidadDAO penalidadDAO = new PenalidadDAO();
+        List<Penalidad> lista = penalidadDAO.listarHistorial();
+
+        if (lista.isEmpty()) {
+            System.out.println("No hay penalidades registradas.");
+            return;
+        }
+
+        System.out.println("\n--- HISTORIAL DE PENALIDADES ---");
+        for (Penalidad p : lista) {
+            System.out.println(
+                "ID: " + p.getPenalidadId() +
+                " | PrestamoID: " + p.getPrestamoId() +
+                " | PersonaID: " + p.getPersonaId() +
+                " | Tipo: " + p.getTipoPenalidadId() +
+                " | Monto: " + p.getMonto() +
+                " | Fecha: " + p.getFechaAplicacion() +
+                " | Pagada: " + (p.isPagada() ? "Sí" : "No") +
+                " | Obs: " + p.getObservacion()
+            );
         }
     }
 
@@ -1124,6 +1343,7 @@ public class Main {
             System.out.print("Ingrese monto por daño/pérdida: ");
             montoExtra = new BigDecimal(sc.nextLine());
         }
+
 
         boolean ok = prestamoService.devolverRecursoConPenalidad(
                 prestamo,
