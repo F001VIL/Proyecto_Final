@@ -2,7 +2,7 @@ package dao;
 
 import modelo.ReservaSala;
 import modelo.Sala;
-import dao.ConexionBD;
+
 
 import java.sql.*;
 import java.util.ArrayList;

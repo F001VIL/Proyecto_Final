@@ -219,5 +219,59 @@ public class PenalidadDAO {
 
         return false;
     }
+
+    public List<Penalidad> listarHistorial() {
+        List<Penalidad> lista = new ArrayList<>();
+
+        String sql = """
+            SELECT PenalidadID, PrestamoID, PersonaID, TipoPenalidadID,
+                Monto, FechaAplicacion, Pagada, Observacion
+            FROM Penalidad
+            ORDER BY FechaAplicacion DESC
+            """;
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Penalidad p = new Penalidad(
+                        rs.getInt("PenalidadID"),
+                        rs.getInt("PrestamoID"),
+                        rs.getInt("PersonaID"),
+                        rs.getInt("TipoPenalidadID"),
+                        rs.getBigDecimal("Monto"),
+                        rs.getTimestamp("FechaAplicacion"),
+                        rs.getBoolean("Pagada"),
+                        rs.getString("Observacion")
+                );
+                lista.add(p);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error listando historial de penalidades: " + e.getMessage());
+        }
+
+        return lista;
+    }
+
+    public boolean actualizarMonto(int penalidadId, BigDecimal nuevoMonto) {
+
+        String sql = "UPDATE Penalidad SET Monto = ? WHERE PenalidadID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setBigDecimal(1, nuevoMonto);
+            ps.setInt(2, penalidadId);
+
+            int filas = ps.executeUpdate();
+            return filas > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error actualizando monto de penalidad: " + e.getMessage());
+            return false;
+        }
+    }
     
 }

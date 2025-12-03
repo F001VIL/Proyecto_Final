@@ -10,7 +10,7 @@ public class Prestamo {
     private Timestamp fechaPrestamo;
     private Timestamp fechaVencimiento;
     private Timestamp fechaDevolucion;
-    private String titulo; // agregado para mostrar título del recurso
+    private String titulo; 
 
     // === Constructor usado en RecursoDAO ===
     public Prestamo(int prestamoId, int copiaId, String titulo,

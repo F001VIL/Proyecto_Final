@@ -1,7 +1,7 @@
 package dao;
 
 import modelo.Solicitud;
-import dao.ConexionBD;
+
 
 import java.sql.*;
 import java.util.ArrayList;

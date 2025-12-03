@@ -39,16 +39,19 @@ public class PrestamoDAO {
     }
 
     // Registrar la devolución de un préstamo
-    public boolean registrarDevolucion(int prestamoId, Timestamp fechaDevolucion) {
+    public boolean registrarDevolucion(int prestamoId,Timestamp fechaDevolucion,String observacion) {
         String sql = "UPDATE Prestamo " +
-                     "SET FechaDevolucion = ?, EstadoPrestamo = 'Devuelto' " +
-                     "WHERE PrestamoID = ?";
+                    "SET FechaDevolucion = ?, " +
+                    "    EstadoPrestamo = 'Devuelto', " +
+                    "    Observaciones = ? " +
+                    "WHERE PrestamoID = ?";
 
         try (Connection con = ConexionBD.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setTimestamp(1, fechaDevolucion);
-            ps.setInt(2, prestamoId);
+            ps.setString(2, observacion);
+            ps.setInt(3, prestamoId);
 
             int filas = ps.executeUpdate();
             return filas > 0;
@@ -118,6 +121,56 @@ public class PrestamoDAO {
         }
 
         return lista;
+    }
+
+    public List<Prestamo> listarTodos() {
+        String sql = "SELECT PrestamoID, CopiaID, PersonaID, " +
+                    "       FechaPrestamo, FechaVencimiento, FechaDevolucion, EstadoPrestamo " +
+                    "FROM Prestamo " +
+                    "ORDER BY FechaPrestamo DESC";
+
+        List<Prestamo> lista = new ArrayList<>();
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Prestamo p = new Prestamo(
+                    rs.getInt("PrestamoID"),
+                    rs.getInt("CopiaID"),
+                    rs.getInt("PersonaID"),
+                    rs.getTimestamp("FechaPrestamo"),
+                    rs.getTimestamp("FechaVencimiento"),
+                    rs.getTimestamp("FechaDevolucion"),
+                    rs.getString("EstadoPrestamo")   // ← parámetro extra, el objeto lo ignora
+                );
+                lista.add(p);
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error listando préstamos: " + e.getMessage());
+        }
+
+        return lista;
+    }
+
+    public boolean actualizarObservacion(int prestamoId, String observacion) {
+        String sql = "UPDATE Prestamo SET Observaciones = ? WHERE PrestamoID = ?";
+
+        try (Connection con = ConexionBD.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, observacion);
+            ps.setInt(2, prestamoId);
+
+            int filas = ps.executeUpdate();
+            return filas > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error actualizando observación de préstamo: " + e.getMessage());
+            return false;
+        }
     }
 
 }

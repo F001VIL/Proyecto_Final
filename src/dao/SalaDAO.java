@@ -1,5 +1,5 @@
 package dao;
-import dao.ConexionBD;
+
 
 import modelo.Sala;
 import java.sql.*;

@@ -154,8 +154,9 @@ public class PrestamoService {
         int copiaId = prestamo.getCopiaId();
 
         Timestamp fechaDev = Timestamp.valueOf(LocalDateTime.now());
+        String observacion = "Devuelto normal";
 
-        boolean ok = prestamoDAO.registrarDevolucion(prestamoId, fechaDev);
+        boolean ok = prestamoDAO.registrarDevolucion(prestamoId, fechaDev, observacion);
         if (!ok) return false;
 
         recursoCopiaDAO.actualizarEstadoCopia(copiaId, 1);
@@ -188,8 +189,17 @@ public class PrestamoService {
             return false;
         }
 
+        String observacion;
+        switch (opcionDevolucion) {
+            case 1 -> observacion = "Devuelto normal";
+            case 2 -> observacion = "Devolución con daño";
+            case 3 -> observacion = "No devuelto (pérdida)";
+            case 4 -> observacion = "Devuelto con retraso";
+            default -> observacion = "Devolución registrada";
+        }
+
         Timestamp ahora = new Timestamp(System.currentTimeMillis());
-        prestamoDAO.registrarDevolucion(prestamoId, ahora);
+        prestamoDAO.registrarDevolucion(prestamoId, ahora, observacion);
 
         // Calcular retraso
         long diasRetraso =
@@ -232,8 +242,7 @@ public class PrestamoService {
                         prestamoId, personaId, montoDanioOPerdida,
                         "Pérdida del material"
                 );
-                recursoCopiaDAO.actualizarEstadoCopia(copiaId, 3); // perdido
-                // ❌ NO aumentar stock
+                recursoCopiaDAO.actualizarEstadoCopia(copiaId, 3); 
                 break;
 
             case 4: // Solo retraso
@@ -259,26 +268,51 @@ public class PrestamoService {
             BigDecimal monto,
             String observacion
     ) {
-
         int prestamoId = prestamo.getPrestamoId();
-        int personaId = prestamo.getPersonaId();
+        int personaId  = prestamo.getPersonaId();
 
+        // Solo se permite penalidad posterior si YA fue devuelto
         if (prestamo.getFechaDevolucion() == null) {
             System.out.println("El recurso no ha sido devuelto.");
             return false;
         }
 
-        return switch (tipoPenalidad) {
-            case 2 -> penalidadDAO.registrarPenalidadPorDanio(
-                    prestamoId, personaId, monto, observacion
-            );
-            case 3 -> penalidadDAO.registrarPenalidadPorPerdida(
-                    prestamoId, personaId, monto, observacion
-            );
-            default -> {
+        boolean okPenalidad;
+        String textoObsPrestamo;
+
+        switch (tipoPenalidad) {
+            case 2: // Daño
+                okPenalidad = penalidadDAO.registrarPenalidadPorDanio(
+                        prestamoId, personaId, monto, observacion
+                );
+                // Lo que quieres que quede en la columna Observaciones de Prestamo
+                textoObsPrestamo = "Daño detectado en inventario";
+                break;
+
+            case 3: // Pérdida
+                okPenalidad = penalidadDAO.registrarPenalidadPorPerdida(
+                        prestamoId, personaId, monto, observacion
+                );
+                textoObsPrestamo = "Pérdida detectada en inventario";
+                break;
+
+            default:
                 System.out.println("Tipo de penalidad inválido.");
-                yield false;
-            }
-        };
+                return false;
+        }
+
+        if (!okPenalidad) {
+            return false;
+        }
+
+        
+        boolean okObs = prestamoDAO.actualizarObservacion(prestamoId, textoObsPrestamo);
+
+        if (!okObs) {
+            
+            System.out.println("Penalidad registrada, pero no se pudo actualizar la observación del préstamo.");
+        }
+
+        return okObs;
     }
 }
