@@ -34,6 +34,7 @@ public class Usuario {
 
     public int getId() { return id; }
     public int getPersonaId() { return personaId; }
+    
     public String getUsername() { return username; }
     public String getPasswordHash() { return passwordHash; }
     public String getSalt() { return salt; }
