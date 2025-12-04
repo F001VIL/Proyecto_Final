@@ -16,9 +16,7 @@ public class ReservaSala {
     private FacilityResource recurso;
 
 
-    // ============================================================
-    // CONSTRUCTOR PARA CARGAR DESDE BD
-    // ============================================================
+    
     public ReservaSala(int reservaId, int salaId, int personaID, Timestamp fechaInicio,
                        Timestamp fechaFin, String estadoReserva, int numeroPersonas, Timestamp fechaRegistro) {
 
@@ -33,9 +31,7 @@ public class ReservaSala {
     }
 
 
-    // ============================================================
-    // CONSTRUCTOR PARA NUEVAS RESERVAS DESDE EL PROGRAMA
-    // ============================================================
+    
     public ReservaSala(FacilityResource recurso, int personaID, Timestamp fechaInicio,
                        Timestamp fechaFin, int numeroPersonas) {
 

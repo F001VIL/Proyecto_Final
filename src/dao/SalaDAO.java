@@ -9,13 +9,11 @@ import java.util.List;
 
 public class SalaDAO {
 
-    // Constructor vacío: permite new SalaDAO() en Main
+    
     public SalaDAO() {
     }
 
-    // ============================================================
-    // INSERTAR NUEVA SALA (ROOM o CAMPUS)
-    // ============================================================
+    
     public boolean insertarSala(FacilityResource s) {
         String sql = "INSERT INTO Sala (NombreSala, Ubicacion, Capacidad, Descripcion, TipoRecurso) "
                    + "VALUES (?, ?, ?, ?, ?)";
@@ -38,9 +36,7 @@ public class SalaDAO {
         return false;
     }
 
-    // ============================================================
-    // OBTENER TODAS LAS SALAS
-    // ============================================================
+    
     public List<FacilityResource> obtenerTodas() {
         List<FacilityResource> lista = new ArrayList<>();
         String sql = "SELECT SalaID, NombreSala, Ubicacion, Capacidad, Descripcion, TipoRecurso FROM Sala";
@@ -60,9 +56,7 @@ public class SalaDAO {
         return lista;
     }
 
-    // ============================================================
-    // OBTENER SALAS POR TIPO (ROOM / CAMPUS)
-    // ============================================================
+   
     public List<FacilityResource> obtenerPorTipo(String tipo) {
         List<FacilityResource> lista = new ArrayList<>();
         String sql = "SELECT SalaID, NombreSala, Ubicacion, Capacidad, Descripcion, TipoRecurso "
@@ -86,9 +80,7 @@ public class SalaDAO {
         return lista;
     }
 
-    // ============================================================
-    // OBTENER UNA SALA POR ID
-    // ============================================================
+    
     public FacilityResource obtenerPorId(int id) {
         String sql = "SELECT SalaID, NombreSala, Ubicacion, Capacidad, Descripcion, TipoRecurso "
                    + "FROM Sala WHERE SalaID = ?";
@@ -111,9 +103,7 @@ public class SalaDAO {
         return null;
     }
 
-    // ============================================================
-    // ACTUALIZAR SALA (update flexible, si no quieres usarlo lo ignoras)
-    // ============================================================
+    
     public boolean actualizarSala(FacilityResource nueva, FacilityResource anterior) {
         String sql = "UPDATE Sala SET NombreSala = ?, Ubicacion = ?, Capacidad = ?, "
                    + "Descripcion = ?, TipoRecurso = ? WHERE SalaID = ?";
@@ -137,9 +127,7 @@ public class SalaDAO {
         return false;
     }
 
-    // ============================================================
-    // ELIMINAR SALA
-    // ============================================================
+    
     public boolean eliminarSala(int salaId) {
         String sql = "DELETE FROM Sala WHERE SalaID = ?";
 
@@ -156,9 +144,7 @@ public class SalaDAO {
         return false;
     }
 
-    // ============================================================
-    // CONVERSIÓN BD → Room o CampusSpace
-    // ============================================================
+    
     private FacilityResource convertirAResource(ResultSet rs) throws SQLException {
 
         int id = rs.getInt("SalaID");

@@ -8,7 +8,7 @@ public abstract class FacilityResource implements Resource {
     protected String name;
     protected String location;
     protected String description;
-    protected String tipoRecurso; // ROOM o CAMPUS
+    protected String tipoRecurso; 
 
     public FacilityResource(int id, String name, String location, int capacity,
                             String description, String tipoRecurso) {

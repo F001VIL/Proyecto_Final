@@ -1,7 +1,7 @@
 package dao;
 
 import modelo.ReservaSala;
-import modelo.FacilityResource;
+
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -11,14 +11,12 @@ public class ReservaSalaDAO {
 
     private SalaDAO salaDAO;
 
-    // Constructor vacío: permite new ReservaSalaDAO() en Main
+    
     public ReservaSalaDAO() {
         this.salaDAO = new SalaDAO();
     }
 
-    // ============================================================
-    // CREAR RESERVA
-    // ============================================================
+    
     public boolean crearReserva(ReservaSala r) {
 
         String sql = "INSERT INTO ReservaSala "
@@ -44,9 +42,7 @@ public class ReservaSalaDAO {
         return false;
     }
 
-    // ============================================================
-    // LISTAR TODAS LAS RESERVAS
-    // ============================================================
+    
     public List<ReservaSala> obtenerReservas() {
         List<ReservaSala> lista = new ArrayList<>();
 
@@ -80,9 +76,7 @@ public class ReservaSalaDAO {
         return lista;
     }
 
-    // ============================================================
-    // OBTENER RESERVAS POR SALA
-    // ============================================================
+    
     public List<ReservaSala> obtenerPorSala(int salaId) {
         List<ReservaSala> lista = new ArrayList<>();
 
@@ -108,9 +102,7 @@ public class ReservaSalaDAO {
         return lista;
     }
 
-    // ============================================================
-    // ELIMINAR RESERVA
-    // ============================================================
+    
     public boolean eliminarReserva(int reservaId) {
         String sql = "DELETE FROM ReservaSala WHERE ReservaID = ?";
 
@@ -127,9 +119,7 @@ public class ReservaSalaDAO {
         return false;
     }
 
-    // ============================================================
-    // ACTUALIZAR ESTADO
-    // ============================================================
+    
     public boolean actualizarEstado(int reservaId, String nuevoEstado) {
         String sql = "UPDATE ReservaSala SET EstadoReserva = ? WHERE ReservaID = ?";
 
@@ -147,9 +137,7 @@ public class ReservaSalaDAO {
         return false;
     }
 
-    // ============================================================
-    // CONVERSIÓN BD → OBJETO
-    // ============================================================
+    
     private ReservaSala convertirAReserva(ResultSet rs) throws SQLException {
         return new ReservaSala(
                 rs.getInt("ReservaID"),
