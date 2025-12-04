@@ -146,11 +146,13 @@ public class UsuarioDAO {
     // ELIMINAR USUARIO POR ID
     // ===============================
     public boolean eliminarUsuario(int usuarioId) {
-        String sql = "DELETE FROM Usuario WHERE UsuarioID = ?";
+        String sql = "DELETE FROM Usuario WHERE UsuarioID = ? DELETE FROM Persona WHERE PersonaID = ?";
         try (Connection con = ConexionBD.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, usuarioId);
+            ps.setInt(2, usuarioId); // Asumiendo que PersonaID es igual a UsuarioID aquí
+            
             int filas = ps.executeUpdate();
             return filas > 0;
 
