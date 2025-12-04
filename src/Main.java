@@ -308,7 +308,8 @@ public class Main {
             System.out.println("3. Gestionar mis reservas de sala");
             System.out.println("4. Ver mis solicitudes");
             System.out.println("5. Devolver material digital");
-            System.out.println("6. Salir");
+            System.out.println("6. Gestionar préstamo de recursos tecnológicos");
+            System.out.println("7. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -322,7 +323,8 @@ public class Main {
                 case 3 -> gestionarMisReservasSala(sc, salaDAO, u);
                 case 4 -> verSolicitudesUsuario(solDAO, u);
                 case 5 -> devolverMaterialDigital(sc, u.getId());
-                case 6 -> { return; }
+                case 6 -> new LoanStudentManager().run(u.getId());
+                case 7 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -373,7 +375,8 @@ public class Main {
             System.out.println("3. Gestionar mis reservas de sala");
             System.out.println("4. Ver mis solicitudes");
             System.out.println("5. Devolver material digital");
-            System.out.println("6. Salir");
+            System.out.println("6. Gestionar préstamo de recursos tecnológicos");
+            System.out.println("7. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -387,7 +390,8 @@ public class Main {
                 case 3 -> gestionarMisReservasSala(sc, salaDAO, u);
                 case 4 -> verSolicitudesUsuario(solDAO, u);
                 case 5 -> devolverMaterialDigital(sc, u.getId());
-                case 6 -> { return; }
+                case 6 -> new LoanStudentManager().run(u.getId());
+                case 7 -> { return; }
                 default -> System.out.println(" Opción no válida.");
             }
         }
