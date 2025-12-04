@@ -1,10 +1,12 @@
 package modelo;
 
-public class Room extends FacilityResource{
+public class Room extends FacilityResource {
+
     private String roomType;
 
-    public Room(int capacity, String roomType) {
-        super(capacity);
+    public Room(int id, String name, String location, int capacity,
+                String description, String roomType) {
+        super(id, name, location, capacity, description, "ROOM");
         this.roomType = roomType;
     }
 
@@ -14,8 +16,6 @@ public class Room extends FacilityResource{
 
     @Override
     public String generateCode() {
-        // Random number between 1000 and 9999
-        int randomNum = 1000 + (int)(Math.random() * 9000);
-        return "ROOM-" + randomNum;
+        return "ROOM-" + id;
     }
 }
