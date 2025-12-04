@@ -1,10 +1,12 @@
 package modelo;
 
-public class CampusSpace extends FacilityResource{
+public class CampusSpace extends FacilityResource {
+
     private String spaceType;
 
-    public CampusSpace(int capacity, String spaceType) {
-        super(capacity);
+    public CampusSpace(int id, String name, String location, int capacity,
+                       String description, String spaceType) {
+        super(id, name, location, capacity, description, "CAMPUS");
         this.spaceType = spaceType;
     }
 
@@ -14,8 +16,6 @@ public class CampusSpace extends FacilityResource{
 
     @Override
     public String generateCode() {
-        // Random number between 1000 and 9999
-        int randomNum = 1000 + (int)(Math.random() * 9000);
-        return "CAMPUSSPACE-" + randomNum;
+        return "CAMPUS-" + id;
     }
 }

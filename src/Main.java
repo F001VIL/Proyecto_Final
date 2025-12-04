@@ -17,15 +17,16 @@ import modelo.RecursoCopia;
 import modelo.Solicitud;
 import modelo.Thesis;
 import modelo.ReservaSala;
-import modelo.Sala;
+import modelo.FacilityResource;
+import modelo.Room;
+import modelo.CampusSpace;
 
 import java.util.List;
 import java.util.Scanner;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.text.ParseException;
+
 
 public class Main {
 
@@ -304,9 +305,10 @@ public class Main {
             System.out.println("\n--- MENÚ ESTUDIANTE ---");
             System.out.println("1. Solicitar préstamo");
             System.out.println("2. Reservar sala");
-            System.out.println("3. Ver mis solicitudes");
-            System.out.println("4. Devolver material digital");
-            System.out.println("5. Salir");
+            System.out.println("3. Gestionar mis reservas de sala");
+            System.out.println("4. Ver mis solicitudes");
+            System.out.println("5. Devolver material digital");
+            System.out.println("6. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -316,10 +318,11 @@ public class Main {
                 case 2 -> {
                     listarSalas(new SalaDAO());
                     reservarSala(sc, salaDAO, u);
-                    }
-                case 3 -> verSolicitudesUsuario(solDAO, u);
-                case 4 -> devolverMaterialDigital(sc, u.getId());
-                case 5 -> { return; }
+                }
+                case 3 -> gestionarMisReservasSala(sc, salaDAO, u);
+                case 4 -> verSolicitudesUsuario(solDAO, u);
+                case 5 -> devolverMaterialDigital(sc, u.getId());
+                case 6 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -367,8 +370,10 @@ public class Main {
             System.out.println("\n--- MENÚ PROFESOR ---");
             System.out.println("1. Solicitar préstamo");
             System.out.println("2. Reservar sala");
-            System.out.println("3. Ver mis solicitudes");
-            System.out.println("4. Salir");
+            System.out.println("3. Gestionar mis reservas de sala");
+            System.out.println("4. Ver mis solicitudes");
+            System.out.println("5. Devolver material digital");
+            System.out.println("6. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -378,9 +383,11 @@ public class Main {
                 case 2 -> {
                     listarSalas(new SalaDAO());
                     reservarSala(sc, salaDAO, u);
-                    }
-                case 3 -> verSolicitudesUsuario(solDAO, u);
-                case 4 -> { return; }
+                }
+                case 3 -> gestionarMisReservasSala(sc, salaDAO, u);
+                case 4 -> verSolicitudesUsuario(solDAO, u);
+                case 5 -> devolverMaterialDigital(sc, u.getId());
+                case 6 -> { return; }
                 default -> System.out.println(" Opción no válida.");
             }
         }
@@ -410,13 +417,16 @@ public class Main {
             System.out.println("7. Registrar penalidad posterior");
             System.out.println("8. Modificar monto de penalidad");
             System.out.println("9. Ver penalidades y registrar pago");
-            System.out.println("10. Registrar sala");
-            System.out.println("11. Ver salas");
-            System.out.println("12. Eliminar recurso");
-            System.out.println("13. Modificar material / copia");
-            System.out.println("14. Ver historial de préstamos");
-            System.out.println("15. Ver historial de penalidades");
-            System.out.println("16. Salir");
+            System.out.println("10. Registrar sala o campus");
+            System.out.println("11. Ver salas y campus");
+            System.out.println("12. Modificar sala o campus");
+            System.out.println("13. Eliminar sala o campus");
+            System.out.println("14. Eliminar recurso");
+            System.out.println("15. Modificar material / copia");
+            System.out.println("16. Eliminar reserva de sala");
+            System.out.println("17. Ver historial de préstamos");
+            System.out.println("18. Ver historial de penalidades");
+            System.out.println("19. Salir");
             System.out.print("Opción: ");
 
             int op = Integer.parseInt(sc.nextLine());
@@ -425,7 +435,7 @@ public class Main {
                 case 1 -> registrarMaterial(sc, recursoDAO);
                 case 2 -> listarMaterialesDisponibles(recursoDAO, recursoCopiaDAO);
                 case 3 -> solDAO.verSolicitudesPendientes().forEach(System.out::println);
-                case 4 -> salaDAO.listarReservas().forEach(System.out::println);
+                case 4 -> salaDAO.obtenerReservas().forEach(System.out::println);
                 case 5 -> procesarSolicitudes(sc, solDAO);
                 case 6 -> registrarDevolucion(sc);
                 case 7 -> registrarPenalidadPosterior(sc);
@@ -433,11 +443,14 @@ public class Main {
                 case 9 -> gestionarPenalidades(sc);
                 case 10 -> registrarSala(sc, new SalaDAO());
                 case 11 -> listarSalas(new SalaDAO());
-                case 12 -> eliminarRecurso(sc, recursoDAO, recursoCopiaDAO);
-                case 13 -> modificarMaterialOCopia(sc, recursoDAO, recursoCopiaDAO);
-                case 14 -> verHistorialPrestamos(new PrestamoDAO());
-                case 15 -> verHistorialPenalidades(); 
-                case 16 -> { return; }
+                case 12 -> modificarSala(sc, new SalaDAO());
+                case 13 -> eliminarSala(sc, new SalaDAO());
+                case 14 -> eliminarRecurso(sc, recursoDAO, recursoCopiaDAO);
+                case 15 -> modificarMaterialOCopia(sc, recursoDAO, recursoCopiaDAO);
+                case 16 -> eliminarReserva(sc, new ReservaSalaDAO());
+                case 17 -> verHistorialPrestamos(new PrestamoDAO());
+                case 18 -> verHistorialPenalidades(); 
+                case 19 -> { return; }
                 default -> System.out.println("Opción no válida.");
             }
         }
@@ -1126,6 +1139,191 @@ public class Main {
         }
     }
 
+    private static void gestionarMisReservasSala(Scanner sc, ReservaSalaDAO reservaDAO, Usuario u) {
+
+        System.out.println("\n--- GESTIONAR MIS RESERVAS DE SALA ---");
+
+        var reservas = reservaDAO.obtenerPorUsuario(u.getId());
+
+        if (reservas.isEmpty()) {
+            System.out.println("No tienes reservas registradas.");
+            return;
+        }
+
+        // Mostrar reservas
+        for (ReservaSala r : reservas) {
+            String nombreSala = (r.getRecurso() != null)
+                    ? r.getRecurso().getName()
+                    : ("SalaID " + r.getSalaId());
+
+            System.out.println("ID Reserva: " + r.getReservaId() +
+                            " | Sala: " + nombreSala +
+                            " | Inicio: " + r.getFechaInicio() +
+                            " | Fin: " + r.getFechaFin() +
+                            " | Estado: " + r.getEstadoReserva() +
+                            " | Personas: " + r.getNumeroPersonas());
+        }
+
+        System.out.print("\nIngrese el ID de la reserva a gestionar: ");
+        int id = Integer.parseInt(sc.nextLine());
+
+        // buscar la reserva seleccionada
+        ReservaSala seleccionada = null;
+        for (ReservaSala r : reservas) {
+            if (r.getReservaId() == id) {
+                seleccionada = r;
+                break;
+            }
+        }
+
+        if (seleccionada == null) {
+            System.out.println("No se encontró una reserva con ese ID entre tus reservas.");
+            return;
+        }
+
+        // si ya está cancelada, no tiene sentido modificarla
+        if ("Cancelada".equalsIgnoreCase(seleccionada.getEstadoReserva())) {
+            System.out.println("La reserva ya está cancelada. No se puede modificar.");
+            return;
+        }
+
+        System.out.println("\n1. Modificar fecha / hora / número de personas");
+        System.out.println("2. Cancelar reserva");
+        System.out.println("3. Volver");
+        System.out.print("Elija opción: ");
+        String opStr = sc.nextLine();
+
+        switch (opStr) {
+            case "1" -> modificarMiReservaSala(sc, reservaDAO, seleccionada, u);
+            case "2" -> cancelarMiReservaSala(sc, reservaDAO, seleccionada, u);
+            default -> System.out.println("Volviendo al menú...");
+        }
+    }
+
+    private static void modificarMiReservaSala(Scanner sc, ReservaSalaDAO reservaDAO,ReservaSala reserva, Usuario u) {
+
+        SalaDAO salaDAO = new SalaDAO();
+        FacilityResource sala = salaDAO.obtenerPorId(reserva.getSalaId());
+
+        if (sala == null) {
+            System.out.println("No se encontró la sala asociada a la reserva.");
+            return;
+        }
+
+        System.out.println("\n--- MODIFICAR RESERVA ---");
+        System.out.println("Sala: " + sala.getName() + " | Capacidad: " + sala.getCapacity());
+        System.out.println("Valores actuales:");
+        System.out.println("Inicio: " + reserva.getFechaInicio());
+        System.out.println("Fin: " + reserva.getFechaFin());
+        System.out.println("Personas: " + reserva.getNumeroPersonas());
+        System.out.println("Presione ENTER para mantener un valor.");
+
+        
+        int numPersonas;
+        while (true) {
+            System.out.print("Nuevo número de personas (" + reserva.getNumeroPersonas() + "): ");
+            String numStr = sc.nextLine();
+
+            if (numStr.isEmpty()) {
+                numPersonas = reserva.getNumeroPersonas();
+                break;
+            }
+
+            try {
+                numPersonas = Integer.parseInt(numStr);
+            } catch (NumberFormatException e) {
+                System.out.println("Ingrese un número válido.");
+                continue;
+            }
+
+            if (numPersonas <= 0) {
+                System.out.println("Debe ser mayor que 0.");
+            } else if (numPersonas > sala.getCapacity()) {
+                System.out.println("No puede exceder la capacidad (" + sala.getCapacity() + ").");
+            } else {
+                break;
+            }
+        }
+
+        
+        Timestamp inicio = reserva.getFechaInicio();
+        Timestamp fin = reserva.getFechaFin();
+
+        
+        System.out.print("Nueva fecha inicio (yyyy-MM-dd HH:mm) o ENTER para mantener: ");
+        String fIniStr = sc.nextLine();
+        if (!fIniStr.isEmpty()) {
+            inicio = leerTimestampDesdeTexto(fIniStr);
+            if (inicio == null) {
+                System.out.println("Formato inválido. No se realizó la modificación.");
+                return;
+            }
+        }
+
+        
+        System.out.print("Nueva fecha fin (yyyy-MM-dd HH:mm) o ENTER para mantener: ");
+        String fFinStr = sc.nextLine();
+        if (!fFinStr.isEmpty()) {
+            fin = leerTimestampDesdeTexto(fFinStr);
+            if (fin == null) {
+                System.out.println("Formato inválido. No se realizó la modificación.");
+                return;
+            }
+        }
+
+        
+        Timestamp ahora = new Timestamp(System.currentTimeMillis());
+
+        if (!inicio.after(ahora)) {
+            System.out.println("La fecha de inicio debe ser posterior a la actual.");
+            return;
+        }
+
+        if (!fin.after(inicio)) {
+            System.out.println("La fecha de fin debe ser posterior a la de inicio.");
+            return;
+        }
+
+        long diffMs = fin.getTime() - inicio.getTime();
+        long maxMs = 3L * 60 * 60 * 1000;
+
+        if (diffMs > maxMs) {
+            System.out.println("No se puede reservar por más de 3 horas.");
+            return;
+        }
+
+        
+        boolean ok = reservaDAO.actualizarReservaUsuario(
+                reserva.getReservaId(), u.getId(), inicio, fin, numPersonas
+        );
+
+        if (ok) {
+            System.out.println("Reserva modificada correctamente.");
+        } else {
+            System.out.println("No se pudo modificar la reserva.");
+        }
+    }
+
+    private static void cancelarMiReservaSala(Scanner sc, ReservaSalaDAO reservaDAO,ReservaSala reserva, Usuario u) {
+
+        System.out.print("¿Seguro que deseas cancelar la reserva " + reserva.getReservaId() +"? (s/n): ");
+        String r = sc.nextLine();
+
+        if (!r.equalsIgnoreCase("s")) {
+            System.out.println("Operación cancelada.");
+            return;
+        }
+
+        boolean ok = reservaDAO.cancelarReservaUsuario(reserva.getReservaId(), u.getId());
+
+        if (ok) {
+            System.out.println("Reserva cancelada correctamente.");
+        } else {
+            System.out.println("No se pudo cancelar (puede que ya esté cancelada).");
+        }
+    }
+
+
 
     private static void verHistorialPrestamos(PrestamoDAO prestamoDAO) {
         System.out.println("\n--- HISTORIAL DE PRÉSTAMOS ---");
@@ -1182,27 +1380,136 @@ public class Main {
     }
 
 
-    private static void reservarSala(Scanner sc, ReservaSalaDAO salaDAO, Usuario u) {
+    private static void reservarSala(Scanner sc, ReservaSalaDAO reservaDAO, Usuario u) {
+
+        SalaDAO salaDAO = new SalaDAO();
+
+        System.out.println("\n--- RESERVAR SALA ---");
+
+        System.out.print("Ingrese ID de la sala: ");
+        int salaId = Integer.parseInt(sc.nextLine());
+
+        FacilityResource sala = salaDAO.obtenerPorId(salaId);
+
+        if (sala == null) {
+            System.out.println("Sala no encontrada.");
+            return;
+        }
+
+        System.out.println("Sala seleccionada: " + sala.getName() +
+                        " | Capacidad: " + sala.getCapacity());
+
+        
+        int numPersonas;
+        while (true) {
+            System.out.print("Ingrese número de personas: ");
+            String numStr = sc.nextLine();
+
+            try {
+                numPersonas = Integer.parseInt(numStr);
+            } catch (NumberFormatException e) {
+                System.out.println("Ingrese un número válido.");
+                continue;
+            }
+
+            if (numPersonas <= 0) {
+                System.out.println("El número de personas debe ser mayor que 0.");
+            } else if (numPersonas > sala.getCapacity()) {
+                System.out.println("No puede exceder la capacidad de la sala (" +
+                                sala.getCapacity() + ").");
+            } else {
+                break; // válido
+            }
+        }
+
+        
+        Timestamp inicio;
+        Timestamp fin;
+
+        while (true) {
+            
+            inicio = leerTimestamp(sc,
+                    "Ingrese fecha inicio (formato exacto yyyy-MM-dd HH:mm): ");
+
+            
+            fin = leerTimestamp(sc,
+                    "Ingrese fecha fin (formato exacto yyyy-MM-dd HH:mm): ");
+
+            
+            if (!fin.after(inicio)) {
+                System.out.println("La fecha de fin debe ser posterior a la de inicio.");
+                continue;
+            }
+
+            
+            Timestamp ahora = new Timestamp(System.currentTimeMillis());
+            if (!inicio.after(ahora)) {
+                System.out.println("La fecha de inicio debe ser posterior a la fecha actual.");
+                continue;
+            }
+
+            
+            long diffMs = fin.getTime() - inicio.getTime();
+            long maxMs = 3L * 60 * 60 * 1000; // 3 horas en milisegundos
+
+            if (diffMs > maxMs) {
+                System.out.println("No se puede reservar por más de 3 horas.");
+                continue;
+            }
+
+            break; 
+        }
+
+        
+        ReservaSala reserva = new ReservaSala(sala, u.getId(), inicio, fin, numPersonas);
+
+        if (reservaDAO.crearReserva(reserva)) {
+            System.out.println("Reserva realizada con éxito.");
+        } else {
+            System.out.println("ERROR: No se pudo realizar la reserva.");
+        }
+    }
+
+    private static Timestamp leerTimestamp(Scanner sc, String mensaje) {
+        while (true) {
+            System.out.print(mensaje);
+            String input = sc.nextLine();
+
+            try {
+                return Timestamp.valueOf(input + ":00");
+            } catch (IllegalArgumentException e) {
+                System.out.println("Formato inválido. Ejemplo válido: 2025-12-05 14:30");
+            }
+        }
+    }
+
+    private static Timestamp leerTimestampDesdeTexto(String input) {
         try {
-            System.out.print("ID de sala: ");
-            int sala = Integer.parseInt(sc.nextLine());
-            System.out.print("Fecha inicio (YYYY-MM-DD HH:MM): ");
-            String fi = sc.nextLine();
-            System.out.print("Fecha fin (YYYY-MM-DD HH:MM): ");
-            String ff = sc.nextLine();
+            // Timestamp.valueOf exige "yyyy-MM-dd HH:mm:ss"
+            return Timestamp.valueOf(input + ":00");
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-            Timestamp fechaInicio = new Timestamp(sdf.parse(fi).getTime());
-            Timestamp fechaFin = new Timestamp(sdf.parse(ff).getTime());
 
-            if (salaDAO.reservarSala(sala, u.getPersonaId(), fechaInicio, fechaFin))
-                System.out.println("✔ Reserva registrada.");
-            else
-                System.out.println("Error registrando reserva.");
-        } catch (ParseException e) {
-            System.out.println("Formato de fecha inválido. Use YYYY-MM-DD HH:MM");
-        } catch (NumberFormatException e) {
-            System.out.println("ID de sala inválido.");
+
+    private static void eliminarReserva(Scanner sc, ReservaSalaDAO reservaDAO) {
+
+        System.out.println("\n--- ELIMINAR RESERVA ---");
+        System.out.print("ID de reserva: ");
+        int id = Integer.parseInt(sc.nextLine());
+
+        System.out.print("¿Seguro que desea cancelar esta reserva? (s/n): ");
+        if (!sc.nextLine().equalsIgnoreCase("s")) {
+            System.out.println("Cancelado.");
+            return;
+        }
+
+        if (reservaDAO.eliminarReserva(id)) {
+            System.out.println("Reserva eliminada.");
+        } else {
+            System.out.println("No se pudo eliminar.");
         }
     }
 
@@ -1444,54 +1751,143 @@ public class Main {
 
     // ================= REGISTRAR SALA =================
 
-private static void registrarSala(Scanner sc, SalaDAO salaDAO) {
+    private static void registrarSala(Scanner sc, SalaDAO salaDAO) {
 
-    sc.nextLine();
-    System.out.print("Nombre de la sala: ");
-    String nombre = sc.nextLine();
+        System.out.println("\n--- REGISTRAR SALA ---");
 
-    System.out.print("Ubicación: ");
-    String ubicacion = sc.nextLine();
+        System.out.println("Tipo de recurso:");
+        System.out.println("1. Room");
+        System.out.println("2. Campus Space");
+        System.out.print("Opción: ");
+        String tipo = sc.nextLine();
 
-    System.out.print("Capacidad: ");
-    int capacidad = sc.nextInt();
-    sc.nextLine();
+        System.out.print("Nombre: ");
+        String nombre = sc.nextLine();
 
-    System.out.print("Descripción: ");
-    String descripcion = sc.nextLine();
+        System.out.print("Ubicación: ");
+        String ubicacion = sc.nextLine();
 
-    Sala nueva = new Sala(0, nombre, ubicacion, capacidad, descripcion);
+        System.out.print("Capacidad: ");
+        int capacidad = Integer.parseInt(sc.nextLine());
 
-    if (salaDAO.registrarSala(nueva)) {
-        System.out.println(" Sala registrada correctamente.");
-    } else {
-        System.out.println(" Error al registrar la sala.");
+        System.out.print("Descripción: ");
+        String descripcion = sc.nextLine();
+
+        FacilityResource sala;
+
+        if (tipo.equals("1")) {
+            sala = new Room(0, nombre, ubicacion, capacidad, descripcion, "GENERAL");
+        } else {
+            sala = new CampusSpace(0, nombre, ubicacion, capacidad, descripcion, "GENERAL");
+        }
+
+        if (salaDAO.insertarSala(sala)) {
+            System.out.println("Sala registrada correctamente.");
+        } else {
+            System.out.println("ERROR: No se pudo registrar.");
+        }
     }
-}
 
 
 
 // ================= LISTAR SALAS =================
 
-private static void listarSalas(SalaDAO salaDAO) {
+    private static void listarSalas(SalaDAO salaDAO) {
 
-    List<Sala> salas = salaDAO.listarSalas();
+        System.out.println("\n--- LISTA DE SALAS ---");
 
-    if (salas.isEmpty()) {
-        System.out.println("No hay salas registradas.");
-        return;
+        var salas = salaDAO.obtenerTodas();
+
+        if (salas.isEmpty()) {
+            System.out.println("No hay salas registradas.");
+            return;
+        }
+
+        for (var s : salas) {
+            System.out.println("ID: " + s.getId() + " | Nombre: " + s.getName() +
+                            " | Tipo: " + s.getTipoRecurso() +
+                            " | Capacidad: " + s.getCapacity());
+        }
     }
 
-    System.out.println("===== LISTA DE SALAS =====");
+    private static void modificarSala(Scanner sc, SalaDAO salaDAO) {
 
-    for (Sala s : salas) {
-        System.out.println(
-                s.getSalaId() + " | " +
-                s.getNombreSala() + " | " +
-                s.getUbicacion() + " | Capacidad: " +
-                s.getCapacidad()
-        );
+        System.out.println("\n--- MODIFICAR SALA ---");
+        System.out.print("Ingrese ID de la sala: ");
+        int salaId = Integer.parseInt(sc.nextLine());
+
+        FacilityResource original = salaDAO.obtenerPorId(salaId);
+
+        if (original == null) {
+            System.out.println("Sala no encontrada.");
+            return;
+        }
+
+        System.out.println("Presione ENTER para mantener el valor actual.");
+
+        System.out.print("Nuevo nombre (" + original.getName() + "): ");
+        String nombre = sc.nextLine();
+        if (nombre.isEmpty()) nombre = original.getName();
+
+        System.out.print("Nueva ubicación (" + original.getLocation() + "): ");
+        String ubicacion = sc.nextLine();
+        if (ubicacion.isEmpty()) ubicacion = original.getLocation();
+
+        System.out.print("Nueva capacidad (" + original.getCapacity() + "): ");
+        String capInput = sc.nextLine();
+        int capacidad = capInput.isEmpty() ? original.getCapacity() : Integer.parseInt(capInput);
+
+        System.out.print("Nueva descripción (" + original.getDescription() + "): ");
+        String descripcion = sc.nextLine();
+        if (descripcion.isEmpty()) descripcion = original.getDescription();
+
+        FacilityResource nueva;
+
+        if (original.getTipoRecurso().equalsIgnoreCase("ROOM")) {
+            nueva = new Room(salaId, nombre, ubicacion, capacidad, descripcion, "GENERAL");
+        } else {
+            nueva = new CampusSpace(salaId, nombre, ubicacion, capacidad, descripcion, "GENERAL");
+        }
+
+        if (salaDAO.actualizarSala(nueva, original)) {
+            System.out.println("Sala actualizada correctamente.");
+        } else {
+            System.out.println("Error al actualizar sala.");
+        }
     }
-}
 
+    private static void eliminarSala(Scanner sc, SalaDAO salaDAO) {
+
+        ReservaSalaDAO reservaDAO = new ReservaSalaDAO();
+
+        System.out.println("\n--- ELIMINAR SALA ---");
+        System.out.print("Ingrese ID de la sala: ");
+        int salaId = Integer.parseInt(sc.nextLine());
+
+        FacilityResource sala = salaDAO.obtenerPorId(salaId);
+
+        if (sala == null) {
+            System.out.println("No existe sala con ese ID.");
+            return;
+        }
+
+        
+        if (reservaDAO.existenReservasPorSala(salaId)) {
+            System.out.println("No se puede eliminar la sala '" + sala.getName() + "' porque tiene reservas asociadas.");
+            System.out.println("Primero elimine o cancele esas reservas (opción: Eliminar reserva de sala).");
+            return;
+        }
+
+        System.out.println("¿Seguro que desea eliminar la sala '" + sala.getName() + "'? (s/n)");
+        if (!sc.nextLine().equalsIgnoreCase("s")) {
+            System.out.println("Operación cancelada.");
+            return;
+        }
+
+        if (salaDAO.eliminarSala(salaId)) {
+            System.out.println("Sala eliminada.");
+        } else {
+            System.out.println("No se pudo eliminar.");
+        }
+    }
 }
